@@ -24,6 +24,14 @@ canvas{display:block;}
 #wavemode button.active.vis{background:rgba(255,180,80,0.2);border-color:rgba(255,180,80,0.5);}
 #wavemode button.active.xray{background:rgba(80,160,255,0.2);border-color:rgba(80,160,255,0.5);}
 #wavemode button.active.radio{background:rgba(255,80,80,0.2);border-color:rgba(255,80,80,0.5);}
+#spinctl{position:fixed;bottom:60px;right:28px;z-index:20;text-align:right;
+  font-family:'Instrument Sans',sans-serif;font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;}
+#spinctl label{display:block;margin-bottom:6px;}
+#spinctl input[type=range]{-webkit-appearance:none;width:120px;height:3px;background:rgba(255,255,255,0.15);
+  border-radius:2px;outline:none;cursor:pointer;}
+#spinctl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;
+  border-radius:50%;background:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.3);cursor:pointer;}
+#spinctl .spin-val{font-size:12px;color:rgba(255,255,255,0.5);font-variant-numeric:tabular-nums;margin-top:3px;}
 /* Time dilation */
 #timedilation{position:fixed;bottom:60px;left:28px;z-index:20;pointer-events:none;
   font-family:'Instrument Sans',sans-serif;font-size:10px;letter-spacing:1px;color:rgba(255,255,255,0.35);}
@@ -191,6 +199,7 @@ canvas{display:block;}
       <li><span class="key">Space</span> Gravitational pulse — visual + sound burst</li>
       <li><span class="key">1</span> <span class="key">2</span> <span class="key">3</span> Switch wavelength (Visible / X-Ray / Radio)</li>
       <li><span class="key">T</span> or <span class="key">Double-click</span> Trigger a tidal disruption event</li>
+      <li><span class="key">Spin slider</span> (bottom-right) Adjust black hole angular momentum a*</li>
       <li><span class="key">I</span> Toggle this info panel</li>
     </ul>
   </div>
@@ -210,17 +219,70 @@ canvas{display:block;}
     </ul>
   </div>
 
+  <div class="section">
+    <h2>What is Black Hole Spin?</h2>
+    <p>Black holes have only three measurable properties: <span class="highlight">mass</span>, <span class="highlight">spin</span> (angular momentum), and <span class="highlight">electric charge</span> (negligible in nature). This is the "no-hair theorem" — all other information about the matter that formed the black hole is lost.</p>
+    <p>Spin is measured by the dimensionless parameter <span class="highlight">a* = Jc/GM²</span>, where J is angular momentum. It ranges from 0 (non-rotating, "Schwarzschild" black hole) to a theoretical maximum of 1 (an "extremal Kerr" black hole, where the event horizon rotates at the speed of light).</p>
+    <p><span class="highlight">Why do black holes spin?</span> For the same reason an ice skater spins faster when pulling in their arms — conservation of angular momentum. When a massive star collapses, or when gas spirals inward from an accretion disk, the angular momentum gets concentrated into a smaller and smaller space. Almost all real black holes spin, and many spin very fast.</p>
+    <p><span class="highlight">Real spin measurements:</span></p>
+    <ul>
+      <li><span class="highlight">M87*</span> (6.5 billion M☉, imaged by the EHT) — a* ≈ 0.9</li>
+      <li><span class="highlight">Cygnus X-1</span> (21 M☉, first confirmed BH) — a* > 0.95</li>
+      <li><span class="highlight">GRS 1915+105</span> (12 M☉, microquasar) — a* ≈ 0.998</li>
+      <li><span class="highlight">Sagittarius A*</span> (4 million M☉, our galaxy's center) — a* ≈ 0.9 (estimated)</li>
+    </ul>
+    <p>Spin is measured by observing the inner edge of the accretion disk (which depends on ISCO radius), the shape of X-ray reflection spectra (iron line profile), and gravitational wave signals from merging black holes.</p>
+  </div>
+
+  <div class="section">
+    <h2>Kerr Black Hole — What Changes with Spin</h2>
+    <p>Use the <span class="highlight">spin slider</span> (bottom-right) to change a*. The simulation updates everything in real-time.</p>
+
+    <p><span class="highlight">Event Horizon Shrinks</span></p>
+    <p>r<sub>+</sub> = M(1 + √(1−a*²)). A non-spinning black hole has its horizon at the full Schwarzschild radius. At a*≈1, the horizon shrinks to half that size. You can see the black sphere physically get smaller as you increase spin. This is because the spinning spacetime "supports" the horizon at a smaller radius — loosely analogous to how a spinning top is more stable.</p>
+    <ul>
+      <li>a* = 0.0 → r<sub>+</sub> = 1.00 r<sub>s</sub></li>
+      <li>a* = 0.5 → r<sub>+</sub> = 0.93 r<sub>s</sub></li>
+      <li>a* = 0.7 → r<sub>+</sub> = 0.86 r<sub>s</sub> (default)</li>
+      <li>a* = 0.9 → r<sub>+</sub> = 0.72 r<sub>s</sub></li>
+      <li>a* = 0.998 → r<sub>+</sub> = 0.53 r<sub>s</sub></li>
+    </ul>
+
+    <p><span class="highlight">The Ergosphere</span></p>
+    <p>The purple-blue glow between the horizon and r=1.0. Inside this region, spacetime itself rotates so fast that <em>nothing</em> can remain stationary — not matter, not light, not even spacetime itself. Everything is forced to co-rotate with the black hole. It's oblate: at the equator it always extends to r=1.0 regardless of spin, but at the poles it touches the horizon. The rotating streaks visualize the direction of frame-dragging.</p>
+    <p>The ergosphere is where the <span class="highlight">Penrose process</span> operates: in principle, you can extract energy from a spinning black hole by sending matter into the ergosphere and splitting it so one piece falls in while the other escapes with MORE energy than the original particle had. This is not science fiction — it's a proven consequence of General Relativity and may power real astrophysical jets.</p>
+
+    <p><span class="highlight">Frame Dragging (Lense-Thirring Effect)</span></p>
+    <p>The spinning black hole drags spacetime with it, like a ball spinning in honey. Everything near the black hole gains extra angular velocity — the inner disk spins faster than Kepler's law alone would predict. The formula: ω<sub>fd</sub> = 2Ma*/(r(r²+a²M²)+2a²M³). Inner particles are dragged most.</p>
+    <p>This effect is real and measurable: NASA's Gravity Probe B (2004-2011) measured frame-dragging from Earth's rotation — a shift of just 37 milliarcseconds per year. Near a spinning black hole, the effect is billions of times stronger.</p>
+
+    <p><span class="highlight">ISCO Moves Inward</span></p>
+    <p>The most visually dramatic effect. The Innermost Stable Circular Orbit (ISCO) — the inner edge of the accretion disk — depends on spin:</p>
+    <ul>
+      <li>a* = 0.0 → ISCO = 3.00 r<sub>s</sub> (big gap between disk and horizon)</li>
+      <li>a* = 0.5 → ISCO = 2.32 r<sub>s</sub></li>
+      <li>a* = 0.7 → ISCO = 1.70 r<sub>s</sub> (default)</li>
+      <li>a* = 0.9 → ISCO = 1.15 r<sub>s</sub></li>
+      <li>a* = 0.998 → ISCO = 0.62 r<sub>s</sub> (disk almost touches horizon)</li>
+    </ul>
+    <p>This is how astronomers measure spin in real black holes — by observing how close the inner disk edge gets. A closer inner edge means more gravitational energy is radiated before matter falls in. A maximally spinning BH can convert ~42% of infalling mass to energy (vs. ~6% for non-spinning). For comparison, nuclear fusion converts only ~0.7%. Spinning black holes are the most efficient energy sources in the universe.</p>
+    <p>Try dragging the slider from 0 to 0.998 — watch the inner disk region empty out at low spin and fill in completely at high spin.</p>
+
+    <p><span class="highlight">Time Dilation Changes</span></p>
+    <p>All dτ/dt values in the HUD (bottom-left) recalculate in real-time using the Kerr metric. At higher spin, the ISCO is closer to the horizon, so time there flows much slower. The blinking clock dots update accordingly.</p>
+  </div>
+
   <div class="section" style="border:none;">
-    <h2>Simplifications &amp; Future Work</h2>
+    <h2>Simplifications &amp; Known Limits</h2>
     <p>This simulation prioritizes visual accuracy and real-time performance over full GR ray-tracing. Notable simplifications:</p>
     <ul>
-      <li>The black hole is <span class="highlight">Schwarzschild</span> (non-rotating). Real astrophysical black holes spin (Kerr metric), which creates frame-dragging, an ergosphere, and asymmetric photon orbits.</li>
-      <li>Gravitational lensing uses screen-space distortion rather than full geodesic ray-tracing — accurate in appearance but not photon-exact.</li>
-      <li>The accretion disk is geometrically thin. Real disks can be thick (ADAF) or slim depending on accretion rate.</li>
+      <li>Gravitational lensing uses screen-space distortion rather than full Kerr geodesic ray-tracing — a spinning black hole would produce asymmetric lensing (light co-rotating with the BH bends differently from counter-rotating light). This is not yet implemented.</li>
+      <li>The accretion disk is geometrically thin. Real disks can be thick (ADAF/RIAF at low accretion rates) or slim (at super-Eddington rates).</li>
       <li>TDE timescales are compressed — real events unfold over weeks to months, not seconds.</li>
-      <li>No magnetohydrodynamics (MHD) — magnetic fields play a crucial role in jet formation, disk turbulence, and angular momentum transport.</li>
+      <li>No magnetohydrodynamics (MHD) — magnetic fields play a crucial role in jet formation (Blandford-Znajek process), disk turbulence (MRI instability), and angular momentum transport.</li>
+      <li>The Penrose process and superradiance are not simulated — only the visual ergosphere is shown.</li>
+      <li>Retrograde orbits are not modeled — all disk particles orbit prograde.</li>
     </ul>
-    <p>Potential future additions: Kerr (spinning) black hole with frame dragging, VR/WebXR support, particle collision physics, and full geodesic ray-tracing for the background stars.</p>
   </div>
 </div>
 
@@ -233,6 +295,11 @@ canvas{display:block;}
   <div class="td-row"><span class="td-label">Outer Disk</span><div class="td-bar"><div class="td-fill" id="td-outer" style="width:92.6%;background:#be5;"></div></div><span class="td-val">0.926</span><span class="td-clock" id="tc-outer">·</span></div>
   <div class="td-row td-cam"><span class="td-label">▸ Camera</span><div class="td-bar"><div class="td-fill" id="td-cam" style="width:90%;background:#fc8;"></div></div><span class="td-val" id="td-cam-val">0.900</span><span class="td-clock" id="tc-cam">·</span></div>
   <div class="td-row"><span class="td-label">Distant Observer</span><div class="td-bar"><div class="td-fill" id="td-inf" style="width:100%;background:#8d8;"></div></div><span class="td-val">1.000</span><span class="td-clock" id="tc-inf">·</span></div>
+</div>
+<div id="spinctl">
+  <label>Black Hole Spin · a*</label>
+  <input type="range" id="spinslider" min="0" max="0.998" step="0.01" value="0.7" oninput="setSpinA(parseFloat(this.value))">
+  <div class="spin-val" id="spinval">a* = 0.700</div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -256,6 +323,58 @@ function genSprite(size,falloff,softness){
   const tex=new THREE.CanvasTexture(c);tex.needsUpdate=true;return tex;
 }
 const diskTex=genSprite(64,4.0,1.2),jetTex=genSprite(32,3.0,0.8);
+
+// ============================================================
+// KERR BLACK HOLE PHYSICS
+// Spin parameter a* ∈ [0, 0.998]. a*=0 → Schwarzschild, a*→1 → extremal Kerr
+// All lengths in units where Schwarzschild radius RS = 2M = 1.0, so M = 0.5
+// ============================================================
+const M_BH = 0.5; // mass in our units (RS = 2M = 1.0)
+let spinA = 0.7;   // dimensionless spin parameter a* = a/M
+
+function kerrEventHorizon(a) {
+  // r+ = M(1 + √(1 - a*²))
+  return M_BH * (1.0 + Math.sqrt(Math.max(0, 1.0 - a * a)));
+}
+
+function kerrErgosphere(a, cosTheta) {
+  // r_ergo(θ) = M + √(M² - a²M²cos²θ) = M(1 + √(1 - a*²cos²θ))
+  return M_BH * (1.0 + Math.sqrt(Math.max(0, 1.0 - a * a * cosTheta * cosTheta)));
+}
+
+function kerrISCO(a) {
+  // Exact ISCO formula for prograde orbit in Kerr spacetime
+  // Returns r_isco in our coordinate units
+  const a2 = a * a;
+  const z1 = 1.0 + Math.pow(1.0 - a2, 1.0/3.0) * (Math.pow(1.0 + a, 1.0/3.0) + Math.pow(Math.max(0, 1.0 - a), 1.0/3.0));
+  const z2 = Math.sqrt(3.0 * a2 + z1 * z1);
+  const pro = 3.0 + z2 - Math.sqrt(Math.max(0, (3.0 - z1) * (3.0 + z1 + 2.0 * z2)));
+  const retro = 3.0 + z2 + Math.sqrt(Math.max(0, (3.0 - z1) * (3.0 + z1 + 2.0 * z2)));
+  return { prograde: pro * M_BH, retrograde: retro * M_BH };
+}
+
+function kerrFrameDrag(a, r) {
+  // Frame-dragging angular velocity ω = 2Ma*/(r(r²+a²M²)+2a²M³)
+  // Simplified for equatorial plane
+  const aM = a * M_BH;
+  const r2 = r * r;
+  const a2M2 = aM * aM;
+  return (2.0 * M_BH * aM) / (r * (r2 + a2M2) + 2.0 * a2M2 * M_BH);
+}
+
+function kerrTimeDilation(a, r) {
+  // Approximate Kerr time dilation at equator
+  // dτ/dt = √(1 - 2M/r) for Schwarzschild
+  // For Kerr: dτ/dt ≈ √(1 - 2M/(r + a²M²/r))  (simplified equatorial)
+  const a2M2 = a * a * M_BH * M_BH;
+  const rEff = r + a2M2 / r;
+  return Math.sqrt(Math.max(0.001, 1.0 - 2.0 * M_BH / rEff));
+}
+
+// Current derived values (updated when spin changes)
+let rPlus = kerrEventHorizon(spinA);
+let isco = kerrISCO(spinA);
+let rErgoEquator = 1.0; // Always 2M = 1.0 at equator
 
 // === JS noise for particle placement ===
 function hash2(x,y){let h=x*374761393+y*668265263;h=(h^(h>>13))*1274126177;return((h^(h>>16))&0x7fffffff)/0x7fffffff;}
@@ -303,17 +422,17 @@ const bgMat=new THREE.ShaderMaterial({
     uCamPos:{value:new THREE.Vector3(0,3,8)},
     uTime:{value:0},
     uFov:{value:FOV_MULT},
-    uMode:{value:0}
+    uMode:{value:0},
+    uRPlus:{value:rPlus},
+    uSpinA:{value:spinA}
   },
   vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position,1.0);}`,
   fragmentShader:`
     precision highp float;
     uniform vec2 uRes;
     uniform vec3 uCamPos;
-    uniform float uTime,uFov,uMode;
+    uniform float uTime,uFov,uMode,uRPlus,uSpinA;
     varying vec2 vUv;
-
-    #define RS 1.0
 
     mat3 camMat(vec3 eye,vec3 tgt){
       vec3 f=normalize(tgt-eye),r=normalize(cross(f,vec3(0,1,0))),u=cross(r,f);
@@ -326,20 +445,29 @@ const bgMat=new THREE.ShaderMaterial({
       vec3 rd=normalize(cam*vec3(uv*uFov,1.0));
 
       float b=length(cross(uCamPos,rd));
-      float photonR=1.5*RS;
+      // Photon sphere scales with spin: ~1.5*RS for Schwarzschild, smaller for Kerr prograde
+      float photonR=uRPlus*(1.0+0.5/(1.0+uSpinA));
       float ringGlow=exp(-pow(b-photonR,2.0)*18.0)*0.15;
-      float shadowEdge=exp(-pow(b-1.2*RS,2.0)*5.0)*0.06;
+      float shadowEdge=exp(-pow(b-uRPlus*1.1,2.0)*5.0)*0.06;
+
+      // Ergosphere glow — faint ring between rPlus and 1.0
+      float ergoGlow=0.0;
+      if(uSpinA>0.01){
+        float ergoR=0.5*(uRPlus+1.0); // middle of ergosphere
+        float ergoWidth=1.0-uRPlus;
+        ergoGlow=exp(-pow(b-ergoR,2.0)/(ergoWidth*ergoWidth*0.3))*0.04*uSpinA;
+      }
 
       // Mode-dependent glow color
-      vec3 ringCol,edgeCol;
+      vec3 ringCol,edgeCol,ergoCol;
       if(uMode<0.5){
-        ringCol=vec3(1.0,0.9,0.72); edgeCol=vec3(1.0,0.85,0.6);
+        ringCol=vec3(1.0,0.9,0.72); edgeCol=vec3(1.0,0.85,0.6); ergoCol=vec3(0.4,0.3,0.9);
       } else if(uMode<1.5){
-        ringCol=vec3(0.6,0.8,1.0); edgeCol=vec3(0.4,0.6,1.0);
+        ringCol=vec3(0.6,0.8,1.0); edgeCol=vec3(0.4,0.6,1.0); ergoCol=vec3(0.3,0.3,1.0);
       } else {
-        ringCol=vec3(1.0,0.5,0.2); edgeCol=vec3(1.0,0.4,0.1);
+        ringCol=vec3(1.0,0.5,0.2); edgeCol=vec3(1.0,0.4,0.1); ergoCol=vec3(0.6,0.2,0.5);
       }
-      vec3 col=ringCol*ringGlow+edgeCol*shadowEdge;
+      vec3 col=ringCol*ringGlow+edgeCol*shadowEdge+ergoCol*ergoGlow;
 
       gl_FragColor=vec4(col,1.0);
     }
@@ -354,15 +482,59 @@ bgScene.add(new THREE.Mesh(fsGeo.clone(),bgMat));
 const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(55,window.innerWidth/window.innerHeight,0.1,1000);
 
-// Event horizon — opaque black void
-scene.add(new THREE.Mesh(
+// Event horizon — opaque black void (scalable for Kerr)
+const voidSphere = new THREE.Mesh(
   new THREE.SphereGeometry(1.0,96,96),
   new THREE.ShaderMaterial({
     vertexShader:`void main(){gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
     fragmentShader:`void main(){gl_FragColor=vec4(0.0,0.0,0.0,1.0);}`,
     depthWrite:true,depthTest:true,side:THREE.FrontSide
   })
-));
+);
+voidSphere.scale.setScalar(rPlus);
+scene.add(voidSphere);
+
+// Ergosphere — translucent shell showing frame-dragging region
+// Oblate: radius = 1.0 at equator, rPlus at poles
+const ergoGeo = new THREE.SphereGeometry(1.0, 64, 64);
+const ergoMat = new THREE.ShaderMaterial({
+  uniforms: { uRPlus: { value: rPlus }, uSpinA: { value: spinA }, uTime: { value: 0 } },
+  vertexShader: `
+    varying vec3 vPos; varying vec3 vNorm;
+    uniform float uRPlus, uSpinA;
+    void main() {
+      // Scale: equator stays at 1.0, poles shrink to rPlus
+      vec3 p = position;
+      float cosT = abs(p.y); // |cos(theta)|
+      float rErgo = 0.5 * (1.0 + sqrt(max(0.0, 1.0 - uSpinA*uSpinA*cosT*cosT)));
+      p *= rErgo;
+      vPos = p;
+      vNorm = normalMatrix * normal;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+    }`,
+  fragmentShader: `
+    varying vec3 vPos; varying vec3 vNorm;
+    uniform float uSpinA, uTime;
+    void main() {
+      if(uSpinA < 0.01) discard; // No ergosphere for Schwarzschild
+      float rim = 1.0 - abs(dot(normalize(vNorm), normalize(-vPos)));
+      float equator = 1.0 - abs(vPos.y) / length(vPos);
+      float pulse = 0.85 + 0.15 * sin(uTime * 0.5);
+      // Much stronger alpha: clearly visible at moderate spin
+      float alpha = rim * equator * uSpinA * 0.35 * pulse;
+      alpha += rim * rim * rim * uSpinA * 0.15; // extra rim glow
+      if(alpha < 0.003) discard;
+      vec3 col = mix(vec3(0.25, 0.15, 0.7), vec3(0.6, 0.4, 1.0), rim);
+      // Add spinning streaks to show frame-dragging rotation
+      float streakAngle = atan(vPos.z, vPos.x);
+      float streak = pow(abs(sin(streakAngle * 4.0 + uTime * uSpinA * 2.0)), 8.0);
+      col += vec3(0.2, 0.1, 0.4) * streak * uSpinA;
+      gl_FragColor = vec4(col, alpha);
+    }`,
+  transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.FrontSide
+});
+const ergoMesh = new THREE.Mesh(ergoGeo, ergoMat);
+scene.add(ergoMesh);
 
 // Particle starfield — in separate scene for gravitational lensing
 const starTex=genSprite(32,8.0,2.0);
@@ -406,7 +578,7 @@ const starsMat=(function(){
 // Accretion disk — 90k noise-density particles
 const DISK_N=90000;
 const disk={radii:new Float32Array(DISK_N),angles:new Float32Array(DISK_N),
-  velocities:new Float32Array(DISK_N),baseColors:null,posAttr:null,colAttr:null,mat:null};
+  velocities:new Float32Array(DISK_N),baseColors:null,baseSizes:null,posAttr:null,colAttr:null,sizAttr:null,mat:null};
 
 (function(){
   const N=DISK_N;
@@ -440,12 +612,13 @@ const disk={radii:new Float32Array(DISK_N),angles:new Float32Array(DISK_N),
     placed++;
   }
   disk.baseColors=new Float32Array(col);
+  disk.baseSizes=new Float32Array(siz);
   const geo=new THREE.BufferGeometry();
   geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
   geo.setAttribute('color',new THREE.BufferAttribute(col,3));
   geo.setAttribute('size',new THREE.BufferAttribute(siz,1));
   disk.mat=new THREE.ShaderMaterial({
-    uniforms:{uTime:{value:0},uPulse:{value:0},uTex:{value:diskTex},uMode:{value:0}},
+    uniforms:{uTime:{value:0},uPulse:{value:0},uTex:{value:diskTex},uMode:{value:0},uISCO:{value:isco.prograde}},
     vertexShader:`
       attribute float size;varying vec3 vC;varying float vR;
       uniform float uTime,uPulse;
@@ -456,11 +629,11 @@ const disk={radii:new Float32Array(DISK_N),angles:new Float32Array(DISK_N),
         gl_PointSize=size*(100.0/-mv.z)*(1.0+uPulse*0.2);
         gl_Position=projectionMatrix*mv;}`,
     fragmentShader:`
-      varying vec3 vC;varying float vR;uniform sampler2D uTex;uniform float uMode;
+      varying vec3 vC;varying float vR;uniform sampler2D uTex;uniform float uMode,uISCO;
       void main(){
         float a=texture2D(uTex,gl_PointCoord).a*0.7;
         if(a<0.01)discard;
-        float ib=1.0+smoothstep(4.0,1.02,vR)*1.0;
+        float ib=1.0+smoothstep(uISCO*1.5,uISCO,vR)*1.0;
         vec3 c=vC*ib;
         if(uMode>0.5&&uMode<1.5){
           // X-RAY: remap to blue-white-purple
@@ -482,6 +655,7 @@ const disk={radii:new Float32Array(DISK_N),angles:new Float32Array(DISK_N),
   });
   disk.posAttr=geo.attributes.position;
   disk.colAttr=geo.attributes.color;
+  disk.sizAttr=geo.attributes.size;
   const points=new THREE.Points(geo,disk.mat);
   points.rotation.x=0.08;points.rotation.z=0.05;
   scene.add(points);
@@ -1094,10 +1268,10 @@ const combineMat=new THREE.ShaderMaterial({
 
 // SOLUTION: Render a void-only pass to get a silhouette mask.
 const voidMaskMat=new THREE.ShaderMaterial({
-  uniforms:{uCamPos:{value:new THREE.Vector3()},uRes:{value:new THREE.Vector2()},uFov:{value:FOV_MULT}},
+  uniforms:{uCamPos:{value:new THREE.Vector3()},uRes:{value:new THREE.Vector2()},uFov:{value:FOV_MULT},uRPlus:{value:rPlus}},
   vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position,1.0);}`,
   fragmentShader:`
-    uniform vec3 uCamPos;uniform vec2 uRes;uniform float uFov;varying vec2 vUv;
+    uniform vec3 uCamPos;uniform vec2 uRes;uniform float uFov,uRPlus;varying vec2 vUv;
     mat3 camMat(vec3 eye,vec3 tgt){
       vec3 f=normalize(tgt-eye),r=normalize(cross(f,vec3(0,1,0))),u=cross(r,f);
       return mat3(r,u,f);}
@@ -1106,10 +1280,10 @@ const voidMaskMat=new THREE.ShaderMaterial({
       uv.x*=uRes.x/uRes.y;
       mat3 cam=camMat(uCamPos,vec3(0.0));
       vec3 rd=normalize(cam*vec3(uv*uFov,1.0));
-      // Ray-sphere intersection for void (r=1.0)
+      // Ray-sphere intersection for void (r=rPlus)
       vec3 oc=uCamPos;
       float b2=dot(oc,rd);
-      float c=dot(oc,oc)-1.0;
+      float c=dot(oc,oc)-uRPlus*uRPlus;
       float disc=b2*b2-c;
       float mask=disc>0.0?1.0:0.0;
       gl_FragColor=vec4(vec3(mask),1.0);
@@ -1236,6 +1410,7 @@ document.addEventListener('touchmove',e=>{e.preventDefault();pM(e.touches[0].cli
 document.addEventListener('touchend',pU);
 document.addEventListener('wheel',e=>{
   if(document.getElementById('infopanel').classList.contains('open')) return;
+  if(e.target.id==='spinslider') return;
   tgt.radius=Math.max(2.5,Math.min(25,tgt.radius+e.deltaY*0.008));
 },{passive:true});
 document.addEventListener('keydown',e=>{
@@ -1281,6 +1456,15 @@ function setWaveMode(m){
   compositeMat.uniforms.uMode.value=m;
   bgMat.uniforms.uMode.value=m;
   starsMat.uniforms.uMode.value=m;
+}
+
+function setSpinA(a) {
+  spinA = Math.max(0, Math.min(0.998, a));
+  rPlus = kerrEventHorizon(spinA);
+  isco = kerrISCO(spinA);
+  document.getElementById('spinval').textContent = 'a* = ' + spinA.toFixed(3);
+  // Update disk inner edge uniform
+  if(disk.mat && disk.mat.uniforms.uISCO) disk.mat.uniforms.uISCO.value = isco.prograde;
 }
 
 // ============================================================
@@ -1536,31 +1720,45 @@ function animate(){
   });
 
   // Update disk
-  const pa=disk.posAttr,ca=disk.colAttr,bc=disk.baseColors;
+  const pa=disk.posAttr,ca=disk.colAttr,sa=disk.sizAttr,bc=disk.baseColors,bs=disk.baseSizes;
   const camA=Math.atan2(camera.position.x,camera.position.z);
+  const curISCO = isco.prograde;
   for(let i=0;i<DISK_N;i++){
-    disk.angles[i]+=disk.velocities[i]*0.004;
-    const r=disk.radii[i],a=disk.angles[i];
+    const r=disk.radii[i];
+    // Frame dragging — amplified for visibility
+    const frameDrag=kerrFrameDrag(spinA,r)*3.0;
+    disk.angles[i]+=(disk.velocities[i]+frameDrag)*0.004;
+    const a=disk.angles[i];
     pa.array[i*3]=Math.cos(a)*r;
     pa.array[i*3+2]=Math.sin(a)*r;
+
+    // Particles inside ISCO: fade out (unstable plunging orbits)
+    // Particles inside event horizon: completely hidden
+    let visibility = 1.0;
+    if(r < rPlus * 1.05) {
+      visibility = 0.0;
+    } else if(r < curISCO) {
+      // Fade zone: particles exist but are unstable, dim them significantly
+      const f = (r - rPlus * 1.05) / (curISCO - rPlus * 1.05);
+      visibility = f * f * 0.3; // very dim inside ISCO
+    }
+
+    // Update size based on visibility
+    sa.array[i] = bs[i] * visibility;
+
     // Doppler beaming
     const dop=0.5+0.6*Math.cos(a-camA);
     const df=0.5+dop*0.55;
-    // Gravitational redshift: z = 1/sqrt(1 - rs/r) - 1
-    // rs = 1.0, so factor = sqrt(1 - 1/r)
-    // At r=1.02 (inner edge): factor ≈ 0.14 (extreme redshift)
-    // At r=7.0 (outer): factor ≈ 0.93 (minimal)
-    const rsOverR = 1.0 / r;
-    const redshiftFactor = Math.sqrt(Math.max(0.01, 1.0 - rsOverR));
-    // Shift color toward red: reduce G and B more than R
-    const rShift = 1.0 - (1.0 - redshiftFactor) * 0.3;  // R barely affected
-    const gShift = redshiftFactor * 0.85 + 0.15;          // G moderately shifted
-    const bShift = redshiftFactor * redshiftFactor;        // B strongly shifted
-    ca.array[i*3]  =bc[i*3]  *df*rShift;
-    ca.array[i*3+1]=bc[i*3+1]*df*gShift;
-    ca.array[i*3+2]=bc[i*3+2]*df*bShift;
+    // Gravitational redshift — Kerr-corrected
+    const redshiftFactor = kerrTimeDilation(spinA, r);
+    const rShift = 1.0 - (1.0 - redshiftFactor) * 0.3;
+    const gShift = redshiftFactor * 0.85 + 0.15;
+    const bShift = redshiftFactor * redshiftFactor;
+    ca.array[i*3]  =bc[i*3]  *df*rShift*visibility;
+    ca.array[i*3+1]=bc[i*3+1]*df*gShift*visibility;
+    ca.array[i*3+2]=bc[i*3+2]*df*bShift*visibility;
   }
-  pa.needsUpdate=true;ca.needsUpdate=true;
+  pa.needsUpdate=true;ca.needsUpdate=true;sa.needsUpdate=true;
 
   // Update infall particles
   updateInfall(t);
@@ -1568,28 +1766,46 @@ function animate(){
   // Update tidal disruption event
   updateTDE(1.0);
 
-  // Update time dilation HUD
+  // Update time dilation HUD (Kerr-corrected)
   {
     const camR = sph.radius;
-    const camDilation = Math.sqrt(Math.max(0.001, 1.0 - 1.0 / camR));
+    const camDilation = kerrTimeDilation(spinA, camR);
     document.getElementById('td-cam').style.width = (camDilation * 100) + '%';
     document.getElementById('td-cam-val').textContent = camDilation.toFixed(3);
 
-    // Animate clock dots — each ticks at a rate proportional to its dilation factor
-    // The dot "pulses" on/off like a ticking clock
+    // Update ISCO label and value dynamically
+    const iscoD = kerrTimeDilation(spinA, isco.prograde);
+    const innerD = kerrTimeDilation(spinA, rPlus * 2.0);
+    const outerD = kerrTimeDilation(spinA, 7.5 * M_BH * 2);
+
+    // Update bar widths and values
+    const tdIsco=document.getElementById('td-isco');
+    const tdInner=document.getElementById('td-inner');
+    const tdOuter=document.getElementById('td-outer');
+    if(tdIsco){tdIsco.style.width=(iscoD*100)+'%';}
+    if(tdInner){tdInner.style.width=(innerD*100)+'%';}
+    if(tdOuter){tdOuter.style.width=(outerD*100)+'%';}
+    // Update value text
+    const valEls=document.querySelectorAll('#timedilation .td-val');
+    if(valEls[1]) valEls[1].textContent=iscoD.toFixed(3);
+    if(valEls[2]) valEls[2].textContent=innerD.toFixed(3);
+    if(valEls[3]) valEls[3].textContent=outerD.toFixed(3);
+    // Update ISCO label
+    const lblEls=document.querySelectorAll('#timedilation .td-label');
+    if(lblEls[1]) lblEls[1].textContent='ISCO ('+isco.prograde.toFixed(1)+' r)';
+
+    // Animate clock dots
     const rates = [
       { id: 'tc-eh',    factor: 0.001, color: '#f44' },
-      { id: 'tc-isco',  factor: 0.577, color: '#fa4' },
-      { id: 'tc-inner', factor: 0.707, color: '#fb4' },
-      { id: 'tc-outer', factor: 0.926, color: '#be5' },
+      { id: 'tc-isco',  factor: iscoD, color: '#fa4' },
+      { id: 'tc-inner', factor: innerD, color: '#fb4' },
+      { id: 'tc-outer', factor: outerD, color: '#be5' },
       { id: 'tc-cam',   factor: camDilation, color: '#fc8' },
       { id: 'tc-inf',   factor: 1.0,   color: '#8d8' }
     ];
     for (const r of rates) {
       const el = document.getElementById(r.id);
       if (!el) continue;
-      // Each clock ticks at (factor * 2.0) Hz — so distant observer ticks 2x/sec,
-      // ISCO ticks ~1.15x/sec, event horizon basically never
       const tickPhase = Math.sin(t * Math.PI * 2.0 * r.factor);
       const isOn = tickPhase > 0.3;
       el.textContent = isOn ? '●' : '○';
@@ -1598,13 +1814,22 @@ function animate(){
     }
   }
 
-  // Update BG shader camera
+  // Update BG shader camera + Kerr params
   bgMat.uniforms.uCamPos.value.copy(camera.position);
   bgMat.uniforms.uTime.value=t;
+  bgMat.uniforms.uRPlus.value=rPlus;
+  bgMat.uniforms.uSpinA.value=spinA;
 
-  // Update void mask camera
+  // Update void sphere size and ergosphere
+  voidSphere.scale.setScalar(rPlus);
+  ergoMat.uniforms.uRPlus.value=rPlus;
+  ergoMat.uniforms.uSpinA.value=spinA;
+  ergoMat.uniforms.uTime.value=t;
+
+  // Update void mask camera + Kerr params
   voidMaskMat.uniforms.uCamPos.value.copy(camera.position);
   voidMaskMat.uniforms.uRes.value.set(window.innerWidth,window.innerHeight);
+  voidMaskMat.uniforms.uRPlus.value=rPlus;
 
   // ---- RENDER PIPELINE ----
 
@@ -1614,7 +1839,7 @@ function animate(){
   const bhScreenX=(bhPos3.x*0.5+0.5);
   const bhScreenY=(bhPos3.y*0.5+0.5);
   // Apparent angular radius: project a point on the event horizon
-  const edgePos=new THREE.Vector3(1,0,0);
+  const edgePos=new THREE.Vector3(rPlus,0,0);
   edgePos.project(camera);
   const edgeScreenX=(edgePos.x*0.5+0.5);
   const bhScreenR=Math.abs(edgeScreenX-bhScreenX)*1.1;
