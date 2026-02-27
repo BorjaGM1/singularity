@@ -55,8 +55,8 @@ canvas{display:block;}
 #infopanel .key{display:inline-block;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);
   border-radius:3px;padding:1px 6px;font-size:11px;color:rgba(255,255,255,0.5);margin:0 2px;}
 #infopanel .section{margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid rgba(255,255,255,0.06);}
-#infopanel .close{position:absolute;top:20px;right:20px;background:none;border:none;color:rgba(255,255,255,0.3);
-  font-size:20px;cursor:pointer;padding:8px;}
+#infopanel .close{position:sticky;top:0;float:right;background:rgba(0,0,0,0.8);border:none;color:rgba(255,255,255,0.3);
+  font-size:20px;cursor:pointer;padding:8px 12px;z-index:31;}
 #infopanel .close:hover{color:rgba(255,255,255,0.6);}
 #infopanel ul{margin:8px 0 12px 16px;color:rgba(255,255,255,0.45);font-size:12px;}
 #infopanel li{margin-bottom:6px;}
@@ -81,45 +81,105 @@ canvas{display:block;}
   <div class="section">
     <h2>What is this?</h2>
     <p>A real-time simulation of a <span class="highlight">supermassive black hole</span> with an accretion disk, relativistic jets, and gravitational lensing. Everything you see is computed using actual physics — General Relativity, Schwarzschild spacetime geometry, and blackbody radiation.</p>
-    <p>Built entirely in a single HTML file with Three.js and WebGL shaders.</p>
+    <p>Every galaxy is believed to harbor a supermassive black hole at its center, ranging from millions to billions of solar masses. When gas, dust, or even whole stars fall close enough, they form a swirling accretion disk that heats to millions of degrees — making the black hole visible across the universe despite the hole itself emitting no light.</p>
+    <p>Built entirely in a single HTML file with Three.js and WebGL shaders. No external assets, no server — everything runs in your browser.</p>
   </div>
 
   <div class="section">
-    <h2>What you're seeing</h2>
+    <h2>Accretion Disk</h2>
+    <p>The glowing ring of material orbiting the black hole. In reality, this is superheated gas (mostly hydrogen and helium) spiraling inward, heated by friction and compression to millions of degrees.</p>
     <ul>
-      <li><span class="highlight">Accretion Disk</span> — 90,000 particles orbiting the black hole. Inner particles orbit faster than outer ones (Kepler's laws). The temperature gradient flows from white-hot (inner) through yellow, orange, to dim red (outer).</li>
-      <li><span class="highlight">Event Horizon</span> — the black sphere at the center. Once light crosses this boundary, it can never escape. The radius is the Schwarzschild radius, r<sub>s</sub> = 2GM/c².</li>
-      <li><span class="highlight">Doppler Beaming</span> — one side of the disk appears brighter. Material moving toward you is blue-shifted and brightened; material receding is dimmed. This asymmetry is real and visible in telescope images.</li>
-      <li><span class="highlight">Gravitational Redshift</span> — particles near the event horizon have their light shifted toward red. Photons lose energy climbing out of the gravity well. The deeper the well, the more red the light.</li>
-      <li><span class="highlight">Gravitational Lensing</span> — stars near the black hole's shadow appear displaced and distorted. Light bends around the black hole following curved spacetime. Stars near the photon sphere (1.5× the event horizon) get amplified into an Einstein ring.</li>
-      <li><span class="highlight">Relativistic Jets</span> — twin beams of plasma ejected along the rotation axis at near-light speed. In radio wavelengths, jets dominate the emission. In X-ray, they glow hot blue.</li>
-      <li><span class="highlight">Matter Infall</span> — occasional clumps of gas spiral inward, accelerating as they fall. They leave bright trails before vanishing past the event horizon.</li>
-      <li><span class="highlight">Anamorphic Streaks</span> — cinematic horizontal light streaks from the brightest regions, simulating an anamorphic lens flare.</li>
+      <li><span class="highlight">90,000 particles</span> placed using fractal noise density for realistic clumping and structure.</li>
+      <li><span class="highlight">Keplerian Orbits</span> — inner particles orbit faster than outer ones, following Kepler's third law: v ∝ 1/√r. This differential rotation is what generates the friction that heats the disk.</li>
+      <li><span class="highlight">Temperature Gradient</span> — white-hot inner edge (closest to the event horizon) through yellow and orange to dim red at the outer edge. This matches real accretion disk physics where temperature ∝ r<sup>−3/4</sup>.</li>
+      <li><span class="highlight">Doppler Beaming</span> — the side of the disk rotating toward you appears brighter and slightly blue-shifted; the receding side appears dimmer and red-shifted. This asymmetry was clearly visible in the Event Horizon Telescope's images of M87* and Sagittarius A*.</li>
+      <li><span class="highlight">Gravitational Redshift</span> — photons emitted near the event horizon lose energy climbing out of the gravity well. The formula z = 1/√(1 − r<sub>s</sub>/r) − 1 means particles at the inner disk edge appear noticeably redder than their true temperature. Blue light is affected most strongly.</li>
     </ul>
+  </div>
+
+  <div class="section">
+    <h2>Event Horizon &amp; Gravitational Lensing</h2>
+    <p>The <span class="highlight">event horizon</span> is the boundary beyond which nothing — not even light — can escape. The black sphere you see is actually the <span class="highlight">black hole shadow</span>, which appears larger than the event horizon because light passing nearby gets bent inward.</p>
+    <ul>
+      <li><span class="highlight">Photon Sphere</span> (r = 1.5 r<sub>s</sub>) — at this radius, light can theoretically orbit the black hole in an unstable circular path. In the simulation, stars near this radius get amplified into a bright <span class="highlight">Einstein ring</span>.</li>
+      <li><span class="highlight">Gravitational Lensing</span> — the 25,000 background stars are rendered to a separate texture, then warped by a distortion shader. Each pixel's sampling point is displaced outward from the black hole center with deflection ∝ 1/b² (where b is the impact parameter). Stars behind the black hole appear to wrap around it — this was first observed during the 1919 solar eclipse and confirmed Einstein's General Relativity.</li>
+      <li><span class="highlight">Einstein Ring</span> — when a star is directly behind the black hole, its light is bent equally in all directions, forming a perfect ring of amplified light around the shadow. In the simulation, stars near the photon sphere receive a 3× brightness boost.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Relativistic Jets</h2>
+    <p>Twin beams of plasma ejected along the black hole's rotation axis at velocities approaching the speed of light. Not all accreting black holes produce jets — the mechanism involves magnetic field lines twisted by the spinning accretion disk (the Blandford–Znajek process) or by the spinning black hole itself.</p>
+    <ul>
+      <li>Jets can extend <span class="highlight">millions of light-years</span> into intergalactic space, making them the largest single structures in the universe.</li>
+      <li>The jets contain plasma heated to billions of degrees, making them bright in <span class="highlight">X-ray</span> wavelengths.</li>
+      <li>Charged particles spiraling in the jet's magnetic fields emit <span class="highlight">synchrotron radiation</span>, which is why jets dominate in radio observations — try switching to Radio mode to see this effect.</li>
+      <li>In the simulation: 5,000 particles per jet, helically twisted, with blue-white core coloring.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Matter Infall</h2>
+    <p>12 clumps of gas continuously spiral inward from the outer disk, accelerating as they fall deeper into the gravity well. They leave bright trails that fade as they cross the event horizon.</p>
+    <p>In reality, matter doesn't fall smoothly — turbulence, magnetic reconnection events, and instabilities create clumps and flares. The inner accretion flow is chaotic and variable, which is why real black holes "flicker" in brightness on timescales of minutes to hours.</p>
+  </div>
+
+  <div class="section">
+    <h2>Tidal Disruption Event (TDE)</h2>
+    <p>Press <span class="key">T</span> or <span class="key">Double-click</span> to trigger one.</p>
+    <p>A TDE is one of the most violent events in the universe. It occurs when a star wanders too close to a supermassive black hole — typically through gravitational interactions with other stars in the dense galactic core.</p>
+    <p><span class="highlight">What happens physically:</span></p>
+    <ul>
+      <li><span class="highlight">Approach</span> — the star falls toward the black hole on a nearly parabolic orbit, accelerating as it descends into the gravity well.</li>
+      <li><span class="highlight">Tidal Radius</span> — at ~2.8 r<sub>s</sub>, the <em>differential</em> gravitational force across the star (stronger on the near side, weaker on the far side) exceeds the star's own self-gravity. The star can no longer hold itself together.</li>
+      <li><span class="highlight">Spaghettification</span> — the star is stretched along the radial direction and compressed perpendicular to it. It elongates into a thin stream of hot gas — the famous "spaghettification" coined by Stephen Hawking.</li>
+      <li><span class="highlight">Debris Stream</span> — roughly half the stellar mass gains enough energy to escape entirely. The other half forms a long, thin stream that wraps around the black hole, eventually circularizing into a temporary accretion disk.</li>
+      <li><span class="highlight">Flare</span> — the infalling debris heats to extreme temperatures, producing a brilliant flare visible across billions of light-years. The flare typically peaks in UV/X-ray and fades over weeks to months.</li>
+    </ul>
+    <p><span class="highlight">Observational history:</span></p>
+    <ul>
+      <li>First well-confirmed TDEs were detected in X-ray surveys by ROSAT in the 1990s — sudden brightening in the centers of otherwise quiet galaxies.</li>
+      <li>Modern surveys (ZTF, LSST, eROSITA) now detect several TDEs per year.</li>
+      <li>TDEs are invaluable for astronomers — they briefly "light up" dormant black holes that would otherwise be completely invisible, revealing their mass and spin.</li>
+      <li>The tidal radius depends on black hole mass: for black holes above ~10<sup>8</sup> solar masses, Sun-like stars are swallowed whole because the tidal radius falls inside the event horizon.</li>
+    </ul>
+    <p><span class="highlight">In the simulation:</span> 2,500 particles start clustered as a compact star, fall on a trajectory with angular momentum, get tidally stretched at the tidal radius (force ∝ r<sup>−3.5</sup>), and form an orbiting debris stream. Color evolves from white-blue (intact star) through yellow-white (disruption) to orange-red (cooling debris). Particles that reach r &lt; 0.5 r<sub>s</sub> are absorbed. Sound design includes a rising pitch during approach and a filtered noise burst at disruption.</p>
   </div>
 
   <div class="section">
     <h2>Time Dilation (dτ/dt)</h2>
-    <p>In General Relativity, time flows slower in stronger gravitational fields. The <span class="highlight">dτ/dt</span> value shows how fast a local clock ticks compared to a distant observer's clock.</p>
+    <p>In General Relativity, time flows slower in stronger gravitational fields. This isn't an illusion — it's a real, measurable effect. The <span class="highlight">dτ/dt</span> value (proper time / coordinate time) shows how fast a local clock ticks compared to a distant observer's clock.</p>
     <p>The formula is: <span class="highlight">dτ/dt = √(1 − r<sub>s</sub>/r)</span></p>
     <ul>
-      <li><span class="highlight">Event Horizon</span> (r = r<sub>s</sub>) → 0.000 — time completely stops as seen from outside. A clock here would appear frozen forever.</li>
-      <li><span class="highlight">ISCO</span> (r = 3r<sub>s</sub>) → 0.577 — the Innermost Stable Circular Orbit. Closer than this, no stable orbit exists. Matter here spirals inward. Time flows at 58% normal speed.</li>
-      <li><span class="highlight">Inner Disk</span> (r = 2r<sub>s</sub>) → 0.707 — the hottest, fastest part of the accretion disk. Time at 71%.</li>
-      <li><span class="highlight">Outer Disk</span> (r = 7.5r<sub>s</sub>) → 0.926 — nearly normal time. Minimal gravitational time dilation this far out.</li>
-      <li><span class="highlight">Camera</span> → varies — this is YOU. Zoom in and watch your clock slow down. At minimum zoom, you're close enough to feel significant time dilation.</li>
+      <li><span class="highlight">Event Horizon</span> (r = r<sub>s</sub>) → 0.000 — time completely stops as seen from outside. A clock falling toward the event horizon would appear to slow down and freeze at the boundary — its last photons redshifted into oblivion. From the clock's own perspective, it crosses normally.</li>
+      <li><span class="highlight">ISCO</span> (r = 3r<sub>s</sub>) → 0.577 — the Innermost Stable Circular Orbit. Below this radius, no stable orbit exists — any perturbation causes matter to spiral inward. This is the inner edge of the accretion disk. Time flows at 58% normal speed.</li>
+      <li><span class="highlight">Inner Disk</span> (r = 2r<sub>s</sub>) → 0.707 — matter here is on unstable plunging orbits. Extremely hot and fast. Time at 71%.</li>
+      <li><span class="highlight">Outer Disk</span> (r = 7.5r<sub>s</sub>) → 0.926 — nearly normal time. Gravitational time dilation is measurable but small at this distance.</li>
+      <li><span class="highlight">Camera</span> → varies — this is YOU. Zoom in and watch your clock slow down. At minimum zoom distance (~2.5 r<sub>s</sub>), you'd experience significant time dilation.</li>
       <li><span class="highlight">Distant Observer</span> → 1.000 — infinitely far from the black hole. Normal time. This is the reference frame.</li>
     </ul>
-    <p>Watch the <span class="highlight">blinking dots</span> (●) next to each row — they tick at rates proportional to their time dilation. The event horizon dot barely ever blinks. The distant observer blinks steadily. Your camera dot changes speed as you zoom.</p>
-    <p>This is the same effect that makes GPS satellites need relativistic corrections — their clocks tick ~38 microseconds faster per day than clocks on Earth's surface.</p>
+    <p>The <span class="highlight">blinking dots</span> (●/○) next to each row tick at rates proportional to their time dilation factor. The distant observer blinks steadily. The ISCO dot blinks noticeably slower. The event horizon dot is essentially frozen. Zoom in and watch your camera dot slow down.</p>
+    <p>This same effect operates on Earth, just far weaker. GPS satellites orbit at ~20,200 km altitude where gravity is weaker — their clocks tick ~38 microseconds faster per day than ground clocks. Without relativistic corrections, GPS would drift by ~10 km per day.</p>
   </div>
 
   <div class="section">
     <h2>Wavelength Modes</h2>
+    <p>Real astronomers observe black holes across the electromagnetic spectrum. Each wavelength reveals different physics:</p>
     <ul>
-      <li><span class="highlight">Visible</span> — what your eyes would see: blackbody thermal radiation from hot gas. Orange-white inner disk, red outer regions.</li>
-      <li><span class="highlight">X-Ray</span> — how telescopes like Chandra see black holes. The hottest gas (millions of degrees) emits X-rays. Blue-white palette. Jets glow bright — they contain extremely hot plasma.</li>
-      <li><span class="highlight">Radio</span> — how radio telescopes (VLA, ALMA, EHT) observe them. False-color red/yellow. Jets become dominant because they emit synchrotron radiation — charged particles spiraling in magnetic fields. The Event Horizon Telescope's famous M87* image was captured at radio wavelengths.</li>
+      <li><span class="highlight">Visible</span> — what your eyes would see (if you could survive). Blackbody thermal radiation from hot gas. The accretion disk glows orange-white to red based on temperature. This is the hardest band to observe because dust in galaxies blocks visible light.</li>
+      <li><span class="highlight">X-Ray</span> — how space telescopes like Chandra and XMM-Newton see black holes. Gas at millions of degrees emits X-rays. The blue-white palette reflects the extreme temperatures. Jets glow bright because they contain ultra-hot plasma. Most known stellar-mass black holes were first discovered in X-ray. The corona — a mysterious hot region above the disk — is brightest in X-ray.</li>
+      <li><span class="highlight">Radio</span> — how radio telescopes (VLA, ALMA, EHT) observe them. False-color red/yellow (radio has no "real" color). Jets become dominant because they emit <span class="highlight">synchrotron radiation</span> — charged particles spiraling in magnetic fields at relativistic speeds. The Event Horizon Telescope's famous images of M87* and Sgr A* were captured at 1.3mm radio wavelength. Stars virtually disappear because stars are faint radio emitters.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Visual Effects</h2>
+    <ul>
+      <li><span class="highlight">Anamorphic Streaks</span> — cinematic horizontal light streaks from the brightest regions, simulating an anamorphic lens flare. These are an artistic effect (not physical), created by 4 passes of ultra-wide horizontal blur at quarter resolution.</li>
+      <li><span class="highlight">Bloom</span> — bright regions bleed light into neighboring pixels, simulating how real cameras and eyes respond to intense light sources. 3-pass Gaussian blur with threshold extraction.</li>
+      <li><span class="highlight">Chromatic Aberration</span> — slight red/blue fringing at the edges of the frame, simulating imperfect optics.</li>
+      <li><span class="highlight">Film Grain</span> — subtle noise overlay for cinematic texture.</li>
+      <li><span class="highlight">Ambient Sound</span> — deep space drone built from detuned oscillators, proximity-reactive rumble, radiation noise hiss. The pulse (spacebar) triggers a sub-bass impact with metallic shimmer. TDE events have their own rising-pitch approach sound with a tearing noise burst.</li>
     </ul>
   </div>
 
@@ -127,29 +187,44 @@ canvas{display:block;}
     <h2>Controls</h2>
     <ul>
       <li><span class="key">Drag</span> Orbit the camera around the black hole</li>
-      <li><span class="key">Scroll</span> Zoom in/out</li>
+      <li><span class="key">Scroll</span> Zoom in/out (affects time dilation!)</li>
       <li><span class="key">Space</span> Gravitational pulse — visual + sound burst</li>
       <li><span class="key">1</span> <span class="key">2</span> <span class="key">3</span> Switch wavelength (Visible / X-Ray / Radio)</li>
+      <li><span class="key">T</span> or <span class="key">Double-click</span> Trigger a tidal disruption event</li>
       <li><span class="key">I</span> Toggle this info panel</li>
     </ul>
   </div>
 
-  <div class="section" style="border:none;">
-    <h2>The Physics</h2>
-    <p>This simulation uses the <span class="highlight">Schwarzschild metric</span> — the exact solution to Einstein's field equations for a non-rotating, uncharged black hole. Key equations at work:</p>
+  <div class="section">
+    <h2>The Physics — Key Equations</h2>
+    <p>This simulation uses the <span class="highlight">Schwarzschild metric</span> — the exact solution to Einstein's field equations for a non-rotating, uncharged black hole, published by Karl Schwarzschild in 1916, just months after Einstein published General Relativity.</p>
     <ul>
-      <li><strong>Orbital velocity:</strong> v = √(GM/r) — Kepler's law, particles orbit faster at smaller radii</li>
-      <li><strong>Gravitational redshift:</strong> z = 1/√(1 − r<sub>s</sub>/r) − 1</li>
-      <li><strong>Time dilation:</strong> dτ/dt = √(1 − r<sub>s</sub>/r)</li>
-      <li><strong>Photon sphere:</strong> r = 1.5 r<sub>s</sub> — where light can orbit the black hole</li>
-      <li><strong>ISCO:</strong> r = 3 r<sub>s</sub> — innermost stable circular orbit</li>
-      <li><strong>Star lensing:</strong> screen-space deflection ∝ 1/b² (impact parameter)</li>
+      <li><strong>Schwarzschild radius:</strong> r<sub>s</sub> = 2GM/c² — the event horizon radius. For our Sun, this would be ~3 km. For the M87* black hole (6.5 billion solar masses), it's ~19 billion km.</li>
+      <li><strong>Orbital velocity:</strong> v = √(GM/r) — Kepler's law. Inner disk particles orbit faster.</li>
+      <li><strong>Gravitational redshift:</strong> z = 1/√(1 − r<sub>s</sub>/r) − 1 — photon energy loss climbing out of the well.</li>
+      <li><strong>Time dilation:</strong> dτ/dt = √(1 − r<sub>s</sub>/r) — proper time versus coordinate time.</li>
+      <li><strong>Photon sphere:</strong> r = 1.5 r<sub>s</sub> — where light can orbit (unstably) around the black hole.</li>
+      <li><strong>ISCO:</strong> r = 3 r<sub>s</sub> — innermost stable circular orbit (for Schwarzschild; spinning black holes differ).</li>
+      <li><strong>Tidal acceleration:</strong> a<sub>tidal</sub> ∝ r<sup>−3</sup> — differential gravity that tears apart stars.</li>
+      <li><strong>Gravitational lensing:</strong> deflection ∝ 1/b² (impact parameter) — Schwarzschild light bending.</li>
     </ul>
-    <p>The gravitational lensing warps the starfield by displacing each star's apparent position based on its angular proximity to the black hole shadow — closer stars get bent further outward, and stars near the photon sphere are amplified (Einstein ring effect).</p>
+  </div>
+
+  <div class="section" style="border:none;">
+    <h2>Simplifications &amp; Future Work</h2>
+    <p>This simulation prioritizes visual accuracy and real-time performance over full GR ray-tracing. Notable simplifications:</p>
+    <ul>
+      <li>The black hole is <span class="highlight">Schwarzschild</span> (non-rotating). Real astrophysical black holes spin (Kerr metric), which creates frame-dragging, an ergosphere, and asymmetric photon orbits.</li>
+      <li>Gravitational lensing uses screen-space distortion rather than full geodesic ray-tracing — accurate in appearance but not photon-exact.</li>
+      <li>The accretion disk is geometrically thin. Real disks can be thick (ADAF) or slim depending on accretion rate.</li>
+      <li>TDE timescales are compressed — real events unfold over weeks to months, not seconds.</li>
+      <li>No magnetohydrodynamics (MHD) — magnetic fields play a crucial role in jet formation, disk turbulence, and angular momentum transport.</li>
+    </ul>
+    <p>Potential future additions: Kerr (spinning) black hole with frame dragging, VR/WebXR support, particle collision physics, and full geodesic ray-tracing for the background stars.</p>
   </div>
 </div>
 
-<div id="info">drag to orbit · scroll to zoom · space to pulse · 1/2/3 wavelength · I for info</div>
+<div id="info">drag to orbit · scroll to zoom · space to pulse · 1/2/3 wavelength · T for tidal disruption · I for info</div>
 <div id="timedilation">
   <div class="td-title">Time Dilation · dτ/dt</div>
   <div class="td-row"><span class="td-label">Event Horizon</span><div class="td-bar"><div class="td-fill" id="td-eh" style="width:0%;background:#f44;"></div></div><span class="td-val">0.000</span><span class="td-clock" id="tc-eh">·</span></div>
@@ -645,6 +720,284 @@ function updateInfall(time) {
 }
 
 // ============================================================
+// TIDAL DISRUPTION EVENT — click to spawn a star that gets shredded
+// Star approaches on parabolic orbit, spaghettifies at tidal radius,
+// debris streams around the black hole
+// ============================================================
+const TDE_N = 2500;
+const tde = {
+  active: false,
+  phase: 0, // 0=inactive, 1=approaching, 2=disrupting, 3=streaming, 4=fading
+  timer: 0,
+  starPos: new THREE.Vector3(15, 2, 0),
+  starVel: new THREE.Vector3(-0.5, -0.1, 0.3),
+  particles: [],
+  posAttr: null, colAttr: null, sizAttr: null, mat: null
+};
+
+(function(){
+  const pos = new Float32Array(TDE_N * 3);
+  const col = new Float32Array(TDE_N * 3);
+  const siz = new Float32Array(TDE_N);
+
+  for (let i = 0; i < TDE_N; i++) {
+    tde.particles.push({
+      x: 0, y: 0, z: 0,
+      vx: 0, vy: 0, vz: 0,
+      alive: false,
+      life: 0,
+      maxLife: 0,
+      brightness: 0
+    });
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  geo.setAttribute('size', new THREE.BufferAttribute(siz, 1));
+
+  const glowTex = genSprite(64, 3.5, 1.0);
+  tde.mat = new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0 }, uPulse: { value: 0 }, uTex: { value: glowTex }, uMode: { value: 0 } },
+    vertexShader: `
+      attribute float size; varying vec3 vC;
+      uniform float uPulse;
+      void main() {
+        vC = color * (1.0 + uPulse * 0.4);
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = size * (120.0 / -mv.z);
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: `
+      varying vec3 vC; uniform sampler2D uTex; uniform float uMode;
+      void main() {
+        float a = texture2D(uTex, gl_PointCoord).a;
+        if(a < 0.01) discard;
+        vec3 c = vC;
+        if(uMode > 0.5 && uMode < 1.5){
+          float lum = dot(c, vec3(0.3,0.5,0.2));
+          c = mix(vec3(0.2,0.3,0.8), vec3(0.8,0.9,1.0), min(1.0, lum)) * lum * 2.0;
+        } else if(uMode > 1.5){
+          float lum = dot(c, vec3(0.3,0.5,0.2));
+          c = mix(vec3(0.5,0.1,0.0), vec3(1.0,0.8,0.2), min(1.0, lum)) * lum * 1.5;
+        }
+        gl_FragColor = vec4(c, a * 0.9);
+      }`,
+    transparent: true, vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false
+  });
+
+  tde.posAttr = geo.attributes.position;
+  tde.colAttr = geo.attributes.color;
+  tde.sizAttr = geo.attributes.size;
+
+  const points = new THREE.Points(geo, tde.mat);
+  scene.add(points);
+})();
+
+function spawnTDE() {
+  // Always allow re-triggering — just reset
+  tde.active = true;
+  tde.phase = 1;
+  tde.timer = 0;
+
+  // Random approach direction — always comes from outside
+  const angle = Math.random() * Math.PI * 2;
+  const elev = (Math.random() - 0.5) * 0.5;
+  const dist = 14 + Math.random() * 4;
+  tde.starPos.set(
+    Math.cos(angle) * dist,
+    elev * dist * 0.2,
+    Math.sin(angle) * dist
+  );
+
+  // Velocity: strong angular momentum so debris ORBITS rather than plunging straight in
+  const toCenter = new THREE.Vector3().sub(tde.starPos).normalize();
+  const tangent = new THREE.Vector3(-toCenter.z, 0, toCenter.x);
+  const speed = 0.055 + Math.random() * 0.015;
+  tde.starVel.copy(toCenter).multiplyScalar(speed * 0.5);
+  tde.starVel.addScaledVector(tangent, speed * 0.8); // more tangential = more orbit
+
+  // Reset all particles — clump them at star position
+  for (let i = 0; i < TDE_N; i++) {
+    const p = tde.particles[i];
+    // Tight Gaussian cluster for star shape
+    const gr = () => (Math.random() + Math.random() + Math.random() - 1.5) * 0.12;
+    p.x = tde.starPos.x + gr();
+    p.y = tde.starPos.y + gr();
+    p.z = tde.starPos.z + gr();
+    p.vx = tde.starVel.x;
+    p.vy = tde.starVel.y;
+    p.vz = tde.starVel.z;
+    p.alive = true;
+    p.life = 0;
+    p.maxLife = 800 + Math.random() * 600;
+    p.brightness = 0.6 + Math.random() * 0.4;
+  }
+
+  // Play disruption sound
+  if (audioCtx && masterGain) {
+    const now = audioCtx.currentTime;
+    // Rising pitch — approaching star
+    const rise = audioCtx.createOscillator();
+    rise.type = 'sine';
+    rise.frequency.setValueAtTime(60, now);
+    rise.frequency.exponentialRampToValueAtTime(300, now + 3);
+    rise.frequency.exponentialRampToValueAtTime(40, now + 5);
+    const riseGain = audioCtx.createGain();
+    riseGain.gain.setValueAtTime(0.0, now);
+    riseGain.gain.linearRampToValueAtTime(0.15, now + 1);
+    riseGain.gain.linearRampToValueAtTime(0.25, now + 3);
+    riseGain.gain.exponentialRampToValueAtTime(0.001, now + 6);
+    rise.connect(riseGain);
+    riseGain.connect(masterGain);
+    rise.start(now);
+    rise.stop(now + 6);
+
+    // Tear sound — noise burst at disruption moment
+    setTimeout(() => {
+      if (!audioCtx) return;
+      const now2 = audioCtx.currentTime;
+      const tearBuf = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
+      const td = tearBuf.getChannelData(0);
+      for (let i = 0; i < td.length; i++) td[i] = (Math.random() * 2 - 1);
+      const tear = audioCtx.createBufferSource();
+      tear.buffer = tearBuf;
+      const tearFilter = audioCtx.createBiquadFilter();
+      tearFilter.type = 'bandpass';
+      tearFilter.frequency.value = 200;
+      tearFilter.Q.value = 1;
+      const tearGain = audioCtx.createGain();
+      tearGain.gain.setValueAtTime(0.2, now2);
+      tearGain.gain.exponentialRampToValueAtTime(0.001, now2 + 2);
+      tear.connect(tearFilter);
+      tearFilter.connect(tearGain);
+      tearGain.connect(masterGain);
+      tear.start(now2);
+    }, 2500);
+  }
+}
+
+function updateTDE(dt) {
+  if (!tde.active) return;
+  tde.timer += dt;
+
+  const pa = tde.posAttr, ca = tde.colAttr, sa = tde.sizAttr;
+  const RS = 1.0;
+  const tidalRadius = 2.8; // where spaghettification begins
+  let anyAlive = false;
+
+  for (let i = 0; i < TDE_N; i++) {
+    const p = tde.particles[i];
+    if (!p.alive) {
+      pa.array[i*3] = pa.array[i*3+1] = pa.array[i*3+2] = 0;
+      ca.array[i*3] = ca.array[i*3+1] = ca.array[i*3+2] = 0;
+      sa.array[i] = 0;
+      continue;
+    }
+
+    p.life++;
+    anyAlive = true;
+
+    // Distance to BH
+    const r = Math.sqrt(p.x * p.x + p.y * p.y + p.z * p.z);
+
+    // Gravitational acceleration — tuned so debris orbits visibly before falling in
+    const gStrength = 0.25 / (r * r);
+    const ax = -p.x / r * gStrength;
+    const ay = -p.y / r * gStrength;
+    const az = -p.z / r * gStrength;
+
+    // Tidal force: differential gravity stretches the star into a stream
+    // Stronger effect for more dramatic spaghettification
+    if (r < tidalRadius && r > RS * 0.8) {
+      const tidalStrength = 0.0008 * Math.pow(tidalRadius / r, 3.5);
+      const rx = p.x / r, ry = p.y / r, rz = p.z / r;
+      // Stretch along radial direction
+      p.vx += rx * tidalStrength * (1.0 + (Math.random() - 0.5) * 0.6);
+      p.vy += ry * tidalStrength * (Math.random() - 0.5) * 0.4;
+      p.vz += rz * tidalStrength * (1.0 + (Math.random() - 0.5) * 0.6);
+      // Small perpendicular compression — squeeze into thin stream
+      const px = p.y * rz - p.z * ry;
+      const py = p.z * rx - p.x * rz;
+      const pz = p.x * ry - p.y * rx;
+      const pl = Math.sqrt(px*px + py*py + pz*pz) + 0.001;
+      p.vx -= px / pl * tidalStrength * 0.15;
+      p.vy -= py / pl * tidalStrength * 0.15;
+      p.vz -= pz / pl * tidalStrength * 0.15;
+    }
+
+    // Light drag at very large radii to keep debris from escaping entirely
+    if (r > 12) {
+      const drag = 0.998;
+      p.vx *= drag; p.vy *= drag; p.vz *= drag;
+    }
+
+    p.vx += ax;
+    p.vy += ay;
+    p.vz += az;
+
+    p.x += p.vx;
+    p.y += p.vy;
+    p.z += p.vz;
+
+    // Absorbed by black hole — only at very center
+    if (r < RS * 0.5) {
+      p.alive = false;
+      continue;
+    }
+
+    // Fade over lifetime
+    if (p.life > p.maxLife) {
+      p.alive = false;
+      continue;
+    }
+
+    // Color: starts white-blue (hot star), shifts to orange-red as debris
+    const lifeFrac = p.life / p.maxLife;
+    const fade = 1.0 - lifeFrac * lifeFrac;
+    const proximity = Math.max(0, 1.0 - (r - 1.0) / 5.0); // brighter when close
+
+    let cr, cg, cb;
+    if (lifeFrac < 0.12) {
+      // Intact star: bright white-blue
+      cr = 0.95; cg = 0.95; cb = 1.0;
+    } else if (lifeFrac < 0.35) {
+      // Disruption: hot yellow-white, very bright
+      const t = (lifeFrac - 0.12) / 0.23;
+      cr = 1.0; cg = 0.95 - t * 0.2; cb = 0.9 - t * 0.45;
+    } else {
+      // Streaming debris: cools to orange-red
+      const t = (lifeFrac - 0.35) / 0.65;
+      cr = 1.0 - t * 0.2; cg = 0.75 - t * 0.4; cb = 0.45 - t * 0.35;
+    }
+
+    // Boost brightness when close to BH (heating from compression)
+    const heatBoost = 1.0 + proximity * 0.8;
+    const intensity = p.brightness * fade * heatBoost;
+    pa.array[i*3]   = p.x;
+    pa.array[i*3+1] = p.y;
+    pa.array[i*3+2] = p.z;
+    ca.array[i*3]   = cr * intensity;
+    ca.array[i*3+1] = cg * intensity;
+    ca.array[i*3+2] = cb * intensity;
+
+    // Size: compact when star, larger as debris, extra large near BH
+    const sizeBase = lifeFrac < 0.12 ? 0.2 : (0.2 + lifeFrac * 0.35 + proximity * 0.2);
+    sa.array[i] = sizeBase * p.brightness * fade;
+  }
+
+  pa.needsUpdate = true;
+  ca.needsUpdate = true;
+  sa.needsUpdate = true;
+
+  // Deactivate when all particles dead
+  if (!anyAlive) {
+    tde.active = false;
+    tde.phase = 0;
+  }
+}
+
+// ============================================================
 // COMPOSITE + BLOOM SHADERS
 // ============================================================
 
@@ -891,6 +1244,12 @@ document.addEventListener('keydown',e=>{
   if(e.key==='2') setWaveMode(1);
   if(e.key==='3') setWaveMode(2);
   if(e.key==='i'||e.key==='I') toggleInfo();
+  if(e.key==='t'||e.key==='T') spawnTDE();
+});
+
+document.addEventListener('dblclick',e=>{
+  if(document.getElementById('infopanel').classList.contains('open')) return;
+  spawnTDE();
 });
 
 function toggleInfo(){
@@ -900,13 +1259,23 @@ function toggleInfo(){
   btn.classList.toggle('active');
 }
 
+// Click outside info panel to close
+document.addEventListener('mousedown',e=>{
+  const panel=document.getElementById('infopanel');
+  if(!panel.classList.contains('open')) return;
+  // If click is outside panel and not on the info button, close
+  if(!panel.contains(e.target) && e.target.id!=='infobtn'){
+    toggleInfo();
+  }
+});
+
 let waveMode=0;
 function setWaveMode(m){
   waveMode=m;
   document.querySelectorAll('#wavemode button').forEach((btn,i)=>{
     btn.classList.toggle('active',i===m);
   });
-  [disk.mat,jetUp.mat,jetDown.mat,infall.mat].forEach(mat=>{
+  [disk.mat,jetUp.mat,jetDown.mat,infall.mat,tde.mat].forEach(mat=>{
     if(mat.uniforms.uMode) mat.uniforms.uMode.value=m;
   });
   compositeMat.uniforms.uMode.value=m;
@@ -1141,7 +1510,7 @@ function updateAudio(){
 // ANIMATION
 // ============================================================
 const clock=new THREE.Clock();
-const timeMats=[disk.mat,jetUp.mat,jetDown.mat,dustMat,infall.mat,starsMat];
+const timeMats=[disk.mat,jetUp.mat,jetDown.mat,dustMat,infall.mat,starsMat,tde.mat];
 
 function animate(){
   requestAnimationFrame(animate);
@@ -1195,6 +1564,9 @@ function animate(){
 
   // Update infall particles
   updateInfall(t);
+
+  // Update tidal disruption event
+  updateTDE(1.0);
 
   // Update time dilation HUD
   {
