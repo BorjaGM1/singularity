@@ -69,6 +69,8 @@ function makeRT(s){return new THREE.WebGLRenderTarget(window.innerWidth*pxr*s,wi
 
 // Render targets
 let rtBG=makeRT(1);          // raymarched background (full res for alignment)
+let rtStars=makeRT(1);       // raw star render
+let rtStarsLensed=makeRT(1); // gravitationally lensed stars
 let rtParticles=makeRT(1);   // particle scene
 let rtCombined=makeRT(1);    // combined
 let rtBright=makeRT(0.5);
@@ -142,9 +144,10 @@ scene.add(new THREE.Mesh(
   })
 ));
 
-// Particle starfield — fixed positions, stable
+// Particle starfield — in separate scene for gravitational lensing
 const starTex=genSprite(32,8.0,2.0);
-(function(){
+const starScene=new THREE.Scene();
+const starsMat=(function(){
   const N=25000,pos=new Float32Array(N*3),col=new Float32Array(N*3),siz=new Float32Array(N);
   for(let i=0;i<N;i++){
     const r=60+Math.random()*250,th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);
@@ -157,7 +160,7 @@ const starTex=genSprite(32,8.0,2.0);
   geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
   geo.setAttribute('color',new THREE.BufferAttribute(col,3));
   geo.setAttribute('size',new THREE.BufferAttribute(siz,1));
-  scene.add(new THREE.Points(geo,new THREE.ShaderMaterial({
+  const mat=new THREE.ShaderMaterial({
     uniforms:{uTime:{value:0},uTex:{value:starTex}},
     vertexShader:`attribute float size;varying vec3 vC;varying float vS;uniform float uTime;
       void main(){vC=color;vS=size;vec4 mv=modelViewMatrix*vec4(position,1.0);
@@ -167,7 +170,9 @@ const starTex=genSprite(32,8.0,2.0);
         float tw=0.9+0.1*sin(uTime*0.4+vS*23.0);
         gl_FragColor=vec4(vC*a*tw*1.5,a*tw);}`,
     transparent:true,vertexColors:true,blending:THREE.AdditiveBlending,depthWrite:false
-  })));
+  });
+  starScene.add(new THREE.Points(geo,mat));
+  return mat;
 })();
 
 // Accretion disk — 90k noise-density particles
@@ -301,8 +306,214 @@ const dustMat=(function(){
 })();
 
 // ============================================================
+// MATTER INFALL — particles spiraling into the void with trails
+// Each "clump" is a trail of points that spiral inward, accelerate,
+// brighten, and vanish at the event horizon, then respawn
+// ============================================================
+const INFALL_CLUMPS = 12;
+const TRAIL_LEN = 40;
+const INFALL_N = INFALL_CLUMPS * TRAIL_LEN;
+const infall = { clumps: [], posAttr: null, colAttr: null, sizAttr: null, mat: null };
+
+(function(){
+  const pos = new Float32Array(INFALL_N * 3);
+  const col = new Float32Array(INFALL_N * 3);
+  const siz = new Float32Array(INFALL_N);
+
+  // Initialize clumps
+  for (let c = 0; c < INFALL_CLUMPS; c++) {
+    infall.clumps.push({
+      r: 3.0 + Math.random() * 4.0,        // start radius
+      angle: Math.random() * Math.PI * 2,    // current angle
+      phase: Math.random() * Math.PI * 2,    // y-wobble phase
+      speed: 0.15 + Math.random() * 0.1,     // angular speed multiplier
+      drift: 0.003 + Math.random() * 0.004,  // inward drift rate
+      brightness: 0.5 + Math.random() * 0.5,
+      trail: []  // store past positions
+    });
+    // Pre-fill trail
+    const clump = infall.clumps[c];
+    for (let t = 0; t < TRAIL_LEN; t++) {
+      clump.trail.push({ x: 0, y: 0, z: 0 });
+    }
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  geo.setAttribute('size', new THREE.BufferAttribute(siz, 1));
+
+  const glowTex = genSprite(64, 3.0, 0.8);
+  infall.mat = new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0 }, uPulse: { value: 0 }, uTex: { value: glowTex } },
+    vertexShader: `
+      attribute float size; varying vec3 vC; varying float vA;
+      uniform float uPulse;
+      void main() {
+        vC = color;
+        vA = color.r + color.g + color.b; // brightness proxy
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = size * (90.0 / -mv.z) * (1.0 + uPulse * 0.3);
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: `
+      varying vec3 vC; varying float vA; uniform sampler2D uTex;
+      void main() {
+        float a = texture2D(uTex, gl_PointCoord).a * 0.8;
+        if(a < 0.01) discard;
+        gl_FragColor = vec4(vC, a);
+      }`,
+    transparent: true, vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false
+  });
+
+  infall.posAttr = geo.attributes.position;
+  infall.colAttr = geo.attributes.color;
+  infall.sizAttr = geo.attributes.size;
+
+  const points = new THREE.Points(geo, infall.mat);
+  points.rotation.x = 0.08; points.rotation.z = 0.05;
+  scene.add(points);
+})();
+
+function updateInfall(time) {
+  const pa = infall.posAttr, ca = infall.colAttr, sa = infall.sizAttr;
+
+  for (let c = 0; c < INFALL_CLUMPS; c++) {
+    const cl = infall.clumps[c];
+
+    // Keplerian angular velocity + acceleration as it spirals in
+    const omega = cl.speed / Math.pow(cl.r, 1.5);
+    cl.angle += omega * 0.015;
+
+    // Inward spiral — accelerates as it gets closer
+    const driftAccel = 1.0 + Math.pow(3.0 / Math.max(cl.r, 1.1), 2.0) * 2.0;
+    cl.r -= cl.drift * driftAccel * 0.015;
+
+    // Small y wobble
+    const y = Math.sin(cl.phase + time * 0.5) * 0.015 * cl.r * 0.3;
+
+    // Current head position
+    const hx = Math.cos(cl.angle) * cl.r;
+    const hz = Math.sin(cl.angle) * cl.r;
+
+    // Push new position to trail front, shift old ones back
+    for (let t = TRAIL_LEN - 1; t > 0; t--) {
+      cl.trail[t].x = cl.trail[t-1].x;
+      cl.trail[t].y = cl.trail[t-1].y;
+      cl.trail[t].z = cl.trail[t-1].z;
+    }
+    cl.trail[0].x = hx;
+    cl.trail[0].y = y;
+    cl.trail[0].z = hz;
+
+    // Respawn when it reaches the void
+    if (cl.r < 1.05) {
+      cl.r = 4.0 + Math.random() * 3.5;
+      cl.angle = Math.random() * Math.PI * 2;
+      cl.drift = 0.003 + Math.random() * 0.004;
+      cl.speed = 0.15 + Math.random() * 0.1;
+      cl.brightness = 0.5 + Math.random() * 0.5;
+      // Reset trail to new position to avoid streaks across screen
+      const nx = Math.cos(cl.angle) * cl.r;
+      const nz = Math.sin(cl.angle) * cl.r;
+      for (let t = 0; t < TRAIL_LEN; t++) {
+        cl.trail[t].x = nx; cl.trail[t].y = 0; cl.trail[t].z = nz;
+      }
+    }
+
+    // Write trail to buffers
+    for (let t = 0; t < TRAIL_LEN; t++) {
+      const idx = c * TRAIL_LEN + t;
+      const trailFade = 1.0 - t / TRAIL_LEN; // 1.0 at head, 0.0 at tail
+
+      pa.array[idx*3]   = cl.trail[t].x;
+      pa.array[idx*3+1] = cl.trail[t].y;
+      pa.array[idx*3+2] = cl.trail[t].z;
+
+      // Color: gets hotter (whiter) as radius decreases
+      const rNorm = Math.max(0, Math.min(1, (cl.r - 1.0) / 6.0));
+      const heat = 1.0 - rNorm; // 1.0 = at void, 0.0 = outer edge
+
+      // Trail head: bright hot color. Tail: fades to disk color
+      const headR = 1.0;
+      const headG = 0.7 + heat * 0.25;
+      const headB = 0.3 + heat * 0.6;
+
+      const intensity = trailFade * trailFade * cl.brightness * (0.8 + heat * 1.5);
+      ca.array[idx*3]   = headR * intensity;
+      ca.array[idx*3+1] = headG * intensity;
+      ca.array[idx*3+2] = headB * intensity;
+
+      // Size: head is bigger, tail tapers
+      sa.array[idx] = (0.3 + heat * 0.6) * trailFade * cl.brightness;
+    }
+  }
+
+  pa.needsUpdate = true;
+  ca.needsUpdate = true;
+  sa.needsUpdate = true;
+}
+
+// ============================================================
 // COMPOSITE + BLOOM SHADERS
 // ============================================================
+
+// Gravitational lensing distortion for starfield
+const lensMat=new THREE.ShaderMaterial({
+  uniforms:{
+    tStars:{value:null},
+    uBHScreen:{value:new THREE.Vector2(0.5,0.5)}, // BH center in screen UV
+    uBHRadius:{value:0.1}, // apparent angular radius of shadow in screen units
+    uStrength:{value:1.5}
+  },
+  vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position,1.0);}`,
+  fragmentShader:`
+    uniform sampler2D tStars;
+    uniform vec2 uBHScreen;
+    uniform float uBHRadius, uStrength;
+    varying vec2 vUv;
+
+    void main(){
+      vec2 delta = vUv - uBHScreen;
+      float dist = length(delta);
+      vec2 dir = delta / max(dist, 0.0001);
+
+      // Schwarzschild-inspired deflection: α ∝ 1/b (impact parameter)
+      // Stronger bending close to the photon sphere (1.5x shadow radius)
+      float photonR = uBHRadius * 1.5;
+
+      // Einstein ring radius in screen space
+      float einsteinR = uBHRadius * 1.73; // √3 × shadow for Schwarzschild
+
+      if(dist < uBHRadius * 0.85){
+        // Inside shadow — black, no stars visible
+        gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+        return;
+      }
+
+      // Deflection magnitude — inverse distance law with smooth falloff
+      float deflection = uStrength * uBHRadius * uBHRadius / (dist * dist + uBHRadius * 0.1);
+
+      // Near photon sphere: amplification (Einstein ring brightening)
+      float photonProx = exp(-pow(dist - photonR, 2.0) / (uBHRadius * uBHRadius * 0.15));
+      deflection += photonProx * uBHRadius * 0.3;
+
+      // Deflection pushes the sampling point OUTWARD (light bends inward)
+      vec2 lensedUV = vUv + dir * deflection;
+
+      // Clamp to valid UV range
+      lensedUV = clamp(lensedUV, 0.0, 1.0);
+
+      vec3 col = texture2D(tStars, lensedUV).rgb;
+
+      // Einstein ring amplification — stars near photon sphere appear brighter
+      float amp = 1.0 + photonProx * 3.0;
+      col *= amp;
+
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `
+});
 
 // Combine BG + particles
 const combineMat=new THREE.ShaderMaterial({
@@ -362,17 +573,18 @@ const voidMaskMat=new THREE.ShaderMaterial({
     }`
 });
 
-// Final combine: BG * (1-voidMask) + particles
+// Final combine: (lensedStars + BG glow) * (1-voidMask) + particles
 const finalCombineMat=new THREE.ShaderMaterial({
-  uniforms:{tBG:{value:null},tParticles:{value:null},tMask:{value:null}},
+  uniforms:{tBG:{value:null},tParticles:{value:null},tMask:{value:null},tStarsLensed:{value:null}},
   vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position,1.0);}`,
-  fragmentShader:`uniform sampler2D tBG,tParticles,tMask;varying vec2 vUv;
+  fragmentShader:`uniform sampler2D tBG,tParticles,tMask,tStarsLensed;varying vec2 vUv;
     void main(){
       vec3 bg=texture2D(tBG,vUv).rgb;
+      vec3 stars=texture2D(tStarsLensed,vUv).rgb;
       vec3 fg=texture2D(tParticles,vUv).rgb;
       float mask=texture2D(tMask,vUv).r;
-      // Behind void: suppress background stars. Elsewhere: show bg + particles
-      vec3 col=bg*(1.0-mask)+fg;
+      // Behind void: suppress background and stars. Elsewhere: show everything
+      vec3 col=(stars+bg)*(1.0-mask)+fg;
       gl_FragColor=vec4(col,1.0);
     }`
 });
@@ -672,7 +884,7 @@ function updateAudio(){
 // ANIMATION
 // ============================================================
 const clock=new THREE.Clock();
-const timeMats=[disk.mat,jetUp.mat,jetDown.mat,dustMat];
+const timeMats=[disk.mat,jetUp.mat,jetDown.mat,dustMat,infall.mat,starsMat];
 
 function animate(){
   requestAnimationFrame(animate);
@@ -711,6 +923,9 @@ function animate(){
   }
   pa.needsUpdate=true;ca.needsUpdate=true;
 
+  // Update infall particles
+  updateInfall(t);
+
   // Update BG shader camera
   bgMat.uniforms.uCamPos.value.copy(camera.position);
   bgMat.uniforms.uTime.value=t;
@@ -721,22 +936,48 @@ function animate(){
 
   // ---- RENDER PIPELINE ----
 
-  // 1. Raymarched lensed starfield background
+  // 0. Compute BH screen position for lens shader
+  const bhPos3=new THREE.Vector3(0,0,0);
+  bhPos3.project(camera);
+  const bhScreenX=(bhPos3.x*0.5+0.5);
+  const bhScreenY=(bhPos3.y*0.5+0.5);
+  // Apparent angular radius: project a point on the event horizon
+  const edgePos=new THREE.Vector3(1,0,0);
+  edgePos.project(camera);
+  const edgeScreenX=(edgePos.x*0.5+0.5);
+  const bhScreenR=Math.abs(edgeScreenX-bhScreenX)*1.1;
+
+  lensMat.uniforms.uBHScreen.value.set(bhScreenX,bhScreenY);
+  lensMat.uniforms.uBHRadius.value=Math.max(0.01,bhScreenR);
+
+  // 1. Render stars to texture
+  renderer.setRenderTarget(rtStars);
+  renderer.setClearColor(0x000000,1);renderer.clear();
+  renderer.render(starScene,camera);
+
+  // 2. Apply gravitational lensing distortion
+  lensMat.uniforms.tStars.value=rtStars.texture;
+  postQuad.material=lensMat;
+  renderer.setRenderTarget(rtStarsLensed);renderer.clear();
+  renderer.render(postScene,ortho);
+
+  // 3. Raymarched BG glow (Einstein ring)
   renderer.setRenderTarget(rtBG);renderer.clear();
   renderer.render(bgScene,ortho);
 
-  // 2. Void mask (which pixels are behind the event horizon)
+  // 4. Void mask
   postQuad.material=voidMaskMat;
   renderer.setRenderTarget(rtMask);renderer.clear();
   renderer.render(postScene,ortho);
 
-  // 3. Particle scene (black background)
+  // 5. Particle scene (disk, jets, void, dust, infall — no stars)
   renderer.setRenderTarget(rtParticles);
   renderer.setClearColor(0x000000,1);renderer.clear();
   renderer.render(scene,camera);
 
-  // 4. Combine: bg*(1-mask) + particles
+  // 6. Combine: (lensedStars + bg) * (1-mask) + particles
   finalCombineMat.uniforms.tBG.value=rtBG.texture;
+  finalCombineMat.uniforms.tStarsLensed.value=rtStarsLensed.texture;
   finalCombineMat.uniforms.tParticles.value=rtParticles.texture;
   finalCombineMat.uniforms.tMask.value=rtMask.texture;
   postQuad.material=finalCombineMat;
@@ -780,6 +1021,7 @@ window.addEventListener('resize',()=>{
   const p=Math.min(window.devicePixelRatio,2);
   rtParticles.setSize(w*p,h*p);rtCombined.setSize(w*p,h*p);
   rtBG.setSize(w*p,h*p);rtMask.setSize(w*p,h*p);
+  rtStars.setSize(w*p,h*p);rtStarsLensed.setSize(w*p,h*p);
   rtBright.setSize(w*p*0.5,h*p*0.5);
   [rtBlurA,rtBlurB].forEach(rt=>rt.setSize(w*p*0.5,h*p*0.5));
   [blurH,blurV].forEach(m=>m.uniforms.uRes.value.set(w*0.5,h*0.5));
