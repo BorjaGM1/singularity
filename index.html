@@ -75,6 +75,7 @@ let rtParticles=makeRT(1);   // particle scene
 let rtCombined=makeRT(1);    // combined
 let rtBright=makeRT(0.5);
 let rtBlurA=makeRT(0.5),rtBlurB=makeRT(0.5);
+let rtStreakA=makeRT(0.25),rtStreakB=makeRT(0.25); // lower res for wide streaks
 
 const fsGeo=new THREE.PlaneGeometry(2,2);
 const ortho=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
@@ -610,15 +611,43 @@ function mkBlur(h){return new THREE.ShaderMaterial({
       r+=texture2D(tDiffuse,vUv+tx*4.0)*0.0162;gl_FragColor=r;}`});}
 const blurH=mkBlur(true),blurV=mkBlur(false);
 
+// Anamorphic streak — ultra-wide horizontal blur (13-tap, very spread)
+const streakBlurMat=new THREE.ShaderMaterial({
+  uniforms:{tDiffuse:{value:null},uRes:{value:new THREE.Vector2(window.innerWidth*0.25,window.innerHeight*0.25)}},
+  vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position,1.0);}`,
+  fragmentShader:`uniform sampler2D tDiffuse;uniform vec2 uRes;varying vec2 vUv;
+    void main(){
+      float tx=1.0/uRes.x*3.0; // 3x spread for very wide streaks
+      vec4 r=vec4(0.0);
+      r+=texture2D(tDiffuse,vUv+vec2(-6.0*tx,0))*0.012;
+      r+=texture2D(tDiffuse,vUv+vec2(-5.0*tx,0))*0.025;
+      r+=texture2D(tDiffuse,vUv+vec2(-4.0*tx,0))*0.045;
+      r+=texture2D(tDiffuse,vUv+vec2(-3.0*tx,0))*0.075;
+      r+=texture2D(tDiffuse,vUv+vec2(-2.0*tx,0))*0.105;
+      r+=texture2D(tDiffuse,vUv+vec2(-1.0*tx,0))*0.135;
+      r+=texture2D(tDiffuse,vUv)*0.155;
+      r+=texture2D(tDiffuse,vUv+vec2(1.0*tx,0))*0.135;
+      r+=texture2D(tDiffuse,vUv+vec2(2.0*tx,0))*0.105;
+      r+=texture2D(tDiffuse,vUv+vec2(3.0*tx,0))*0.075;
+      r+=texture2D(tDiffuse,vUv+vec2(4.0*tx,0))*0.045;
+      r+=texture2D(tDiffuse,vUv+vec2(5.0*tx,0))*0.025;
+      r+=texture2D(tDiffuse,vUv+vec2(6.0*tx,0))*0.012;
+      // Slightly warm tint for cinematic look
+      r.rgb*=vec3(1.0,0.95,0.85);
+      gl_FragColor=r;
+    }`
+});
+
 // Final output with bloom
 const compositeMat=new THREE.ShaderMaterial({
-  uniforms:{tScene:{value:null},tBloom:{value:null},uBloomStr:{value:1.5},uTime:{value:0}},
+  uniforms:{tScene:{value:null},tBloom:{value:null},tStreak:{value:null},uBloomStr:{value:1.5},uTime:{value:0}},
   vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position,1.0);}`,
-  fragmentShader:`uniform sampler2D tScene,tBloom;uniform float uBloomStr,uTime;varying vec2 vUv;
+  fragmentShader:`uniform sampler2D tScene,tBloom,tStreak;uniform float uBloomStr,uTime;varying vec2 vUv;
     float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
     void main(){
       vec3 sc=texture2D(tScene,vUv).rgb,bl=texture2D(tBloom,vUv).rgb;
-      vec3 col=sc+bl*uBloomStr;
+      vec3 streak=texture2D(tStreak,vUv).rgb;
+      vec3 col=sc+bl*uBloomStr+streak*0.6;
       float d=length(vUv-0.5),ca=d*d*0.004;
       col.r+=texture2D(tBloom,vUv+vec2(ca)).r*uBloomStr*0.18;
       col.b+=texture2D(tBloom,vUv-vec2(ca)).b*uBloomStr*0.18;
@@ -990,7 +1019,7 @@ function animate(){
   renderer.setRenderTarget(rtBright);renderer.clear();
   renderer.render(postScene,ortho);
 
-  // Blur passes
+  // Blur passes (bloom)
   for(let p=0;p<3;p++){
     blurH.uniforms.tDiffuse.value=p===0?rtBright.texture:rtBlurB.texture;
     postQuad.material=blurH;
@@ -1002,9 +1031,23 @@ function animate(){
     renderer.render(postScene,ortho);
   }
 
-  // 6. Final composite with bloom
+  // 5b. Anamorphic streak passes — ultra-wide horizontal blur
+  // Start from bright extract, run 4 wide horizontal passes for massive spread
+  for(let s=0;s<4;s++){
+    streakBlurMat.uniforms.tDiffuse.value=s===0?rtBright.texture:rtStreakB.texture;
+    postQuad.material=streakBlurMat;
+    renderer.setRenderTarget(rtStreakA);renderer.clear();
+    renderer.render(postScene,ortho);
+    // Ping-pong
+    streakBlurMat.uniforms.tDiffuse.value=rtStreakA.texture;
+    renderer.setRenderTarget(rtStreakB);renderer.clear();
+    renderer.render(postScene,ortho);
+  }
+
+  // 6. Final composite with bloom + streaks
   compositeMat.uniforms.tScene.value=rtCombined.texture;
   compositeMat.uniforms.tBloom.value=rtBlurB.texture;
+  compositeMat.uniforms.tStreak.value=rtStreakB.texture;
   compositeMat.uniforms.uTime.value=t;
   compositeMat.uniforms.uBloomStr.value=1.4+pulse*1.2;
   postQuad.material=compositeMat;
@@ -1024,7 +1067,9 @@ window.addEventListener('resize',()=>{
   rtStars.setSize(w*p,h*p);rtStarsLensed.setSize(w*p,h*p);
   rtBright.setSize(w*p*0.5,h*p*0.5);
   [rtBlurA,rtBlurB].forEach(rt=>rt.setSize(w*p*0.5,h*p*0.5));
+  [rtStreakA,rtStreakB].forEach(rt=>rt.setSize(w*p*0.25,h*p*0.25));
   [blurH,blurV].forEach(m=>m.uniforms.uRes.value.set(w*0.5,h*0.5));
+  streakBlurMat.uniforms.uRes.value.set(w*0.25,h*0.25);
 });
 </script>
 </body>
