@@ -23,7 +23,7 @@ canvas{display:block;}
 <body>
 <div id="overlay"></div>
 <div id="title">SINGULARITY</div>
-<div id="info">drag to orbit · scroll to zoom · space to pulse</div>
+<div id="info">drag to orbit · scroll to zoom · space to pulse · click to enable sound</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 // ============================================================
@@ -443,7 +443,230 @@ document.addEventListener('touchstart',e=>{e.preventDefault();pD(e.touches[0].cl
 document.addEventListener('touchmove',e=>{e.preventDefault();pM(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
 document.addEventListener('touchend',pU);
 document.addEventListener('wheel',e=>{tgt.radius=Math.max(2.5,Math.min(25,tgt.radius+e.deltaY*0.008));},{passive:true});
-document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();pulse=1.0;}});
+document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();pulse=1.0;triggerPulseSound();}});
+
+// ============================================================
+// SOUND DESIGN — Web Audio API
+// Deep space ambient drone, proximity rumble, pulse FX
+// Initialized on first user interaction (autoplay policy)
+// ============================================================
+let audioCtx=null, audioInitialized=false;
+let droneGain,rumbleGain,masterGain;
+let droneOscs=[],rumbleOsc,rumbleLFO;
+
+function initAudio(){
+  if(audioInitialized) return;
+  audioInitialized=true;
+
+  audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  const now=audioCtx.currentTime;
+
+  masterGain=audioCtx.createGain();
+  masterGain.gain.value=0;
+  masterGain.connect(audioCtx.destination);
+  // Fade in over 3 seconds
+  masterGain.gain.linearRampToValueAtTime(0.6, now+3);
+
+  // === AMBIENT DRONE ===
+  // Multiple detuned oscillators for rich, evolving texture
+  droneGain=audioCtx.createGain();
+  droneGain.gain.value=0.12;
+  droneGain.connect(masterGain);
+
+  // Low foundation — deep Bb
+  const droneFreqs=[29.14, 29.14*1.002, 29.14*0.998]; // Bb0 with slight detune
+  droneFreqs.forEach((freq,i)=>{
+    const osc=audioCtx.createOscillator();
+    osc.type='sine';
+    osc.frequency.value=freq;
+    const g=audioCtx.createGain();
+    g.gain.value=0.35;
+    osc.connect(g);
+    g.connect(droneGain);
+    osc.start();
+    droneOscs.push({osc,gain:g});
+  });
+
+  // Mid harmonic layer — fifth above, filtered
+  const midFreqs=[43.65, 43.65*1.003]; // F1
+  midFreqs.forEach(freq=>{
+    const osc=audioCtx.createOscillator();
+    osc.type='triangle';
+    osc.frequency.value=freq;
+    const filter=audioCtx.createBiquadFilter();
+    filter.type='lowpass';
+    filter.frequency.value=120;
+    filter.Q.value=2;
+    const g=audioCtx.createGain();
+    g.gain.value=0.2;
+    osc.connect(filter);
+    filter.connect(g);
+    g.connect(droneGain);
+    osc.start();
+    droneOscs.push({osc,gain:g,filter});
+  });
+
+  // High ethereal whisper — very quiet, evolving
+  const highOsc=audioCtx.createOscillator();
+  highOsc.type='sine';
+  highOsc.frequency.value=174.6; // F3
+  const highFilter=audioCtx.createBiquadFilter();
+  highFilter.type='bandpass';
+  highFilter.frequency.value=175;
+  highFilter.Q.value=15;
+  const highGain=audioCtx.createGain();
+  highGain.gain.value=0.03;
+  highOsc.connect(highFilter);
+  highFilter.connect(highGain);
+  highGain.connect(droneGain);
+  highOsc.start();
+  droneOscs.push({osc:highOsc,gain:highGain,filter:highFilter});
+
+  // LFO to modulate drone volume — slow breathing
+  const droneLFO=audioCtx.createOscillator();
+  droneLFO.type='sine';
+  droneLFO.frequency.value=0.06; // ~16 second cycle
+  const lfoGain=audioCtx.createGain();
+  lfoGain.gain.value=0.03;
+  droneLFO.connect(lfoGain);
+  lfoGain.connect(droneGain.gain);
+  droneLFO.start();
+
+  // === PROXIMITY RUMBLE ===
+  // Low freq noise that intensifies as camera approaches
+  rumbleGain=audioCtx.createGain();
+  rumbleGain.gain.value=0;
+  rumbleGain.connect(masterGain);
+
+  rumbleOsc=audioCtx.createOscillator();
+  rumbleOsc.type='sawtooth';
+  rumbleOsc.frequency.value=22;
+  const rumbleFilter=audioCtx.createBiquadFilter();
+  rumbleFilter.type='lowpass';
+  rumbleFilter.frequency.value=60;
+  rumbleFilter.Q.value=3;
+  rumbleOsc.connect(rumbleFilter);
+  rumbleFilter.connect(rumbleGain);
+  rumbleOsc.start();
+
+  // Rumble LFO — menacing throb
+  rumbleLFO=audioCtx.createOscillator();
+  rumbleLFO.type='sine';
+  rumbleLFO.frequency.value=0.3;
+  const rumbleLFOGain=audioCtx.createGain();
+  rumbleLFOGain.gain.value=0.05;
+  rumbleLFO.connect(rumbleLFOGain);
+  rumbleLFOGain.connect(rumbleGain.gain);
+  rumbleLFO.start();
+
+  // === NOISE LAYER ===
+  // Filtered white noise for texture — like radiation hiss
+  const bufferSize=audioCtx.sampleRate*2;
+  const noiseBuffer=audioCtx.createBuffer(1,bufferSize,audioCtx.sampleRate);
+  const data=noiseBuffer.getChannelData(0);
+  for(let i=0;i<bufferSize;i++) data[i]=(Math.random()*2-1);
+  const noiseNode=audioCtx.createBufferSource();
+  noiseNode.buffer=noiseBuffer;
+  noiseNode.loop=true;
+  const noiseFilter=audioCtx.createBiquadFilter();
+  noiseFilter.type='bandpass';
+  noiseFilter.frequency.value=80;
+  noiseFilter.Q.value=0.5;
+  const noiseGain=audioCtx.createGain();
+  noiseGain.gain.value=0.015;
+  noiseNode.connect(noiseFilter);
+  noiseFilter.connect(noiseGain);
+  noiseGain.connect(masterGain);
+  noiseNode.start();
+
+  // Store refs for proximity updates
+  window._audioRefs={rumbleGain,rumbleFilter:rumbleFilter,noiseFilter,noiseGain,droneGain,masterGain,highGain};
+}
+
+function triggerPulseSound(){
+  if(!audioCtx) return;
+  const now=audioCtx.currentTime;
+
+  // Deep impact — sub bass hit
+  const impact=audioCtx.createOscillator();
+  impact.type='sine';
+  impact.frequency.setValueAtTime(80,now);
+  impact.frequency.exponentialRampToValueAtTime(20,now+1.5);
+  const impactGain=audioCtx.createGain();
+  impactGain.gain.setValueAtTime(0.4,now);
+  impactGain.gain.exponentialRampToValueAtTime(0.001,now+2);
+  impact.connect(impactGain);
+  impactGain.connect(masterGain);
+  impact.start(now);
+  impact.stop(now+2);
+
+  // High shimmer — metallic ring
+  const shimmer=audioCtx.createOscillator();
+  shimmer.type='sine';
+  shimmer.frequency.value=1200;
+  const shimFilter=audioCtx.createBiquadFilter();
+  shimFilter.type='bandpass';
+  shimFilter.frequency.value=1200;
+  shimFilter.Q.value=20;
+  const shimGain=audioCtx.createGain();
+  shimGain.gain.setValueAtTime(0.06,now);
+  shimGain.gain.exponentialRampToValueAtTime(0.001,now+3);
+  shimmer.connect(shimFilter);
+  shimFilter.connect(shimGain);
+  shimGain.connect(masterGain);
+  shimmer.start(now);
+  shimmer.stop(now+3);
+
+  // Noise burst — whoosh
+  const burstSize=audioCtx.sampleRate;
+  const burstBuf=audioCtx.createBuffer(1,burstSize,audioCtx.sampleRate);
+  const bd=burstBuf.getChannelData(0);
+  for(let i=0;i<burstSize;i++) bd[i]=(Math.random()*2-1);
+  const burst=audioCtx.createBufferSource();
+  burst.buffer=burstBuf;
+  const burstFilter=audioCtx.createBiquadFilter();
+  burstFilter.type='lowpass';
+  burstFilter.frequency.setValueAtTime(3000,now);
+  burstFilter.frequency.exponentialRampToValueAtTime(100,now+1.5);
+  const burstGain=audioCtx.createGain();
+  burstGain.gain.setValueAtTime(0.15,now);
+  burstGain.gain.exponentialRampToValueAtTime(0.001,now+1.5);
+  burst.connect(burstFilter);
+  burstFilter.connect(burstGain);
+  burstGain.connect(masterGain);
+  burst.start(now);
+
+  // Momentary drone swell
+  if(window._audioRefs){
+    window._audioRefs.droneGain.gain.setValueAtTime(0.25,now);
+    window._audioRefs.droneGain.gain.linearRampToValueAtTime(0.12,now+2);
+  }
+}
+
+function updateAudio(){
+  if(!window._audioRefs) return;
+  const refs=window._audioRefs;
+  const dist=sph.radius;
+
+  // Proximity rumble: louder as camera gets closer
+  // Range: radius 2.5 (max rumble) to 15 (silent)
+  const proximity=Math.max(0,1.0-(dist-2.5)/12.5);
+  const rumbleVol=proximity*proximity*0.15;
+  refs.rumbleGain.gain.linearRampToValueAtTime(rumbleVol,audioCtx.currentTime+0.1);
+
+  // Noise filter opens up when closer
+  refs.noiseFilter.frequency.linearRampToValueAtTime(60+proximity*200,audioCtx.currentTime+0.1);
+  refs.noiseGain.gain.linearRampToValueAtTime(0.01+proximity*0.03,audioCtx.currentTime+0.1);
+
+  // High harmonic gets louder at medium distance (sweet spot)
+  const midProx=Math.exp(-Math.pow(dist-6,2)*0.05);
+  refs.highGain.gain.linearRampToValueAtTime(0.02+midProx*0.04,audioCtx.currentTime+0.1);
+}
+
+// Init audio on first interaction
+['mousedown','touchstart','keydown'].forEach(evt=>{
+  document.addEventListener(evt,initAudio,{once:false});
+});
 
 // ============================================================
 // ANIMATION
@@ -467,6 +690,7 @@ function animate(){
   );
   camera.lookAt(0,0,0);
   pulse*=0.94;
+  updateAudio();
 
   timeMats.forEach(m=>{
     if(m.uniforms.uTime)m.uniforms.uTime.value=t;
