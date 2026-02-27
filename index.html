@@ -133,6 +133,19 @@ canvas{display:block;}
   </div>
 
   <div class="section">
+    <h2>Hawking Radiation</h2>
+    <p>The faint flickering particles at the event horizon represent <span class="highlight">Hawking radiation</span> — one of the most profound predictions in theoretical physics, proposed by Stephen Hawking in 1974.</p>
+    <p><span class="highlight">How it works:</span> Quantum mechanics says that even "empty" vacuum is actually seething with <span class="highlight">virtual particle-antiparticle pairs</span> that pop into existence and annihilate each other almost instantly. Near the event horizon, something extraordinary happens: one particle can fall into the black hole while the other escapes. The escaping particle carries away real energy, and the black hole loses a tiny amount of mass.</p>
+    <ul>
+      <li><span class="highlight">Temperature</span> — a black hole radiates like a blackbody with temperature T = ℏc³/(8πGMk<sub>B</sub>). Smaller black holes are HOTTER. A stellar-mass black hole (~10 M☉) has a temperature of ~6 nanokelvin — far colder than the cosmic microwave background. Only microscopic black holes would glow visibly.</li>
+      <li><span class="highlight">Evaporation</span> — over astronomical timescales, Hawking radiation causes black holes to slowly shrink and eventually evaporate completely. A stellar-mass BH would take ~10<sup>67</sup> years. A supermassive BH: ~10<sup>100</sup> years. The universe is only 1.4 × 10<sup>10</sup> years old.</li>
+      <li><span class="highlight">Information Paradox</span> — if a black hole evaporates completely, what happens to the information about everything that fell in? This remains one of the deepest unsolved problems in physics, sitting at the intersection of quantum mechanics and general relativity.</li>
+    </ul>
+    <p><span class="highlight">In the simulation:</span> 200 particles spawn just outside the event horizon, drift outward (the escaping particle), and fade with quantum-like flickering. The spawn rate increases when the horizon is smaller (higher Hawking temperature). Color shifts bluer for smaller horizons (hotter radiation). The effect is deliberately subtle — in reality, Hawking radiation from astrophysical black holes is undetectably faint, dwarfed by the cosmic microwave background by a factor of trillions.</p>
+    <p>Hawking radiation has never been directly observed, but analog experiments using sonic black holes in Bose-Einstein condensates have confirmed the theoretical mechanism.</p>
+  </div>
+
+  <div class="section">
     <h2>Tidal Disruption Event (TDE)</h2>
     <p>Press <span class="key">T</span> or <span class="key">Double-click</span> to trigger one.</p>
     <p>A TDE is one of the most violent events in the universe. It occurs when a star wanders too close to a supermassive black hole — typically through gravitational interactions with other stars in the dense galactic core.</p>
@@ -178,6 +191,31 @@ canvas{display:block;}
       <li><span class="highlight">X-Ray</span> — how space telescopes like Chandra and XMM-Newton see black holes. Gas at millions of degrees emits X-rays. The blue-white palette reflects the extreme temperatures. Jets glow bright because they contain ultra-hot plasma. Most known stellar-mass black holes were first discovered in X-ray. The corona — a mysterious hot region above the disk — is brightest in X-ray.</li>
       <li><span class="highlight">Radio</span> — how radio telescopes (VLA, ALMA, EHT) observe them. False-color red/yellow (radio has no "real" color). Jets become dominant because they emit <span class="highlight">synchrotron radiation</span> — charged particles spiraling in magnetic fields at relativistic speeds. The Event Horizon Telescope's famous images of M87* and Sgr A* were captured at 1.3mm radio wavelength. Stars virtually disappear because stars are faint radio emitters.</li>
     </ul>
+  </div>
+
+  <div class="section">
+    <h2>Gravitational Waves</h2>
+    <p>Ripples in the fabric of spacetime itself, predicted by Einstein in 1916 and directly detected by LIGO in 2015 — one of the greatest experimental achievements in physics history.</p>
+    <p><span class="highlight">What they are:</span> When massive objects accelerate — black holes merging, neutron stars colliding, stars being tidally disrupted — they send out ripples that literally stretch and compress space as they pass. These waves travel at the speed of light and carry energy away from the source.</p>
+    <ul>
+      <li><span class="highlight">Detection</span> — LIGO/Virgo measure spacetime distortions of ~10<sup>−21</sup> meters — a thousand times smaller than a proton. The first detection (GW150914) came from two black holes merging 1.3 billion light-years away.</li>
+      <li><span class="highlight">Quadrupole radiation</span> — gravitational waves squeeze space in one direction while stretching it perpendicular, oscillating back and forth. This is visible in the simulation as a screen-space distortion ripple.</li>
+      <li><span class="highlight">Energy loss</span> — gravitational waves carry enormous energy. The first detected merger radiated ~3 solar masses of pure energy in gravitational waves in a fraction of a second — briefly outshining the entire observable universe.</li>
+    </ul>
+    <p><span class="highlight">In the simulation:</span> Press <span class="key">Space</span> or trigger a TDE to emit gravitational wave rings. You'll see expanding distortion ripples in the screen (the composite shader warps the image) and the accretion disk particles physically wobble as the wave passes through. The disk oscillation shows how gravitational waves stretch and compress the matter they pass through. Up to 4 simultaneous waves with sub-bass sound (12-25 Hz rumble).</p>
+  </div>
+
+  <div class="section">
+    <h2>Particle Collisions &amp; Shockwaves</h2>
+    <p>The accretion disk is not a calm, smooth flow — it's a violent, turbulent environment. When streams of matter collide with the disk, they produce <span class="highlight">shockwaves</span> and <span class="highlight">hot spots</span> that ripple outward.</p>
+    <ul>
+      <li><span class="highlight">Matter Infall Impacts</span> — when infalling gas clumps cross the disk plane, they collide with orbiting material. The collision heats the gas and produces an expanding shockwave ring visible as a bright ripple propagating through the disk.</li>
+      <li><span class="highlight">TDE Debris Impacts</span> — tidal disruption debris plowing through the disk creates larger, brighter shockwaves. Trigger a TDE and watch for bright flares as the debris stream intersects the disk.</li>
+      <li><span class="highlight">MRI Turbulence</span> — the Magnetorotational Instability (MRI) is the main driver of turbulence in real accretion disks. Magnetic field lines threading the disk get stretched by differential rotation, creating turbulent eddies that heat the gas. The simulation generates random hot spots to approximate this effect.</li>
+      <li><span class="highlight">Impact Sparks</span> — bright white-yellow particles burst outward from collision sites, then fade as the shocked gas cools.</li>
+      <li><span class="highlight">Shockwave Rings</span> — expanding rings of brightened disk particles that propagate outward from each impact. Particles in the wavefront grow temporarily brighter and larger, mimicking the density and temperature jump across a real shock front.</li>
+    </ul>
+    <p>In real accretion disks, shocks are responsible for much of the observed X-ray variability — the rapid flickering seen in X-ray binaries comes from turbulent hot spots orbiting and colliding in the inner disk.</p>
   </div>
 
   <div class="section">
@@ -1048,6 +1086,9 @@ function spawnTDE() {
       tearGain.connect(masterGain);
       tear.start(now2);
     }, 2500);
+
+    // Gravitational wave burst when star is disrupted
+    setTimeout(() => { spawnGWave(1.2, 30, 0.2); }, 2500);
   }
 }
 
@@ -1169,6 +1210,446 @@ function updateTDE(dt) {
     tde.active = false;
     tde.phase = 0;
   }
+}
+
+// ============================================================
+// PARTICLE COLLISIONS — shockwaves, hot spots, impact sparks
+// When matter streams (infall, TDE debris) cross the disk,
+// they create expanding shockwave rings and bright impact flares.
+// Disk turbulence also produces random hot spots (MRI-like).
+// ============================================================
+const MAX_SHOCKS = 24;
+const shocks = [];
+for (let i = 0; i < MAX_SHOCKS; i++) {
+  shocks.push({ active: false, x: 0, z: 0, radius: 0, maxRadius: 0, intensity: 0, age: 0, speed: 0 });
+}
+
+function spawnShock(x, z, intensity, maxRadius, speed) {
+  // Find inactive slot
+  let slot = null;
+  for (let i = 0; i < MAX_SHOCKS; i++) {
+    if (!shocks[i].active) { slot = shocks[i]; break; }
+  }
+  if (!slot) {
+    // Steal oldest
+    let oldest = shocks[0];
+    for (let i = 1; i < MAX_SHOCKS; i++) if (shocks[i].age > oldest.age) oldest = shocks[i];
+    slot = oldest;
+  }
+  slot.active = true;
+  slot.x = x;
+  slot.z = z;
+  slot.radius = 0.05;
+  slot.maxRadius = maxRadius || 2.5;
+  slot.intensity = intensity || 1.0;
+  slot.age = 0;
+  slot.speed = speed || 0.04;
+
+  // Impact sound — short crackle
+  if (audioCtx && masterGain && intensity > 0.5) {
+    const now = audioCtx.currentTime;
+    const click = audioCtx.createOscillator();
+    click.type = 'square';
+    click.frequency.setValueAtTime(150 + Math.random() * 200, now);
+    click.frequency.exponentialRampToValueAtTime(30, now + 0.15);
+    const cg = audioCtx.createGain();
+    cg.gain.setValueAtTime(intensity * 0.06, now);
+    cg.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+    click.connect(cg);
+    cg.connect(masterGain);
+    click.start(now);
+    click.stop(now + 0.2);
+  }
+}
+
+// Spark particles — bright flashes at impact sites
+const SPARK_N = 600;
+const sparks = { particles: [], posAttr: null, colAttr: null, sizAttr: null, mat: null };
+
+(function(){
+  const pos = new Float32Array(SPARK_N * 3);
+  const col = new Float32Array(SPARK_N * 3);
+  const siz = new Float32Array(SPARK_N);
+  for (let i = 0; i < SPARK_N; i++) {
+    sparks.particles.push({ alive: false, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, life: 0, maxLife: 0 });
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  geo.setAttribute('size', new THREE.BufferAttribute(siz, 1));
+  const glowTex = genSprite(32, 5.0, 1.5);
+  sparks.mat = new THREE.ShaderMaterial({
+    uniforms: { uTex: { value: glowTex }, uMode: { value: 0 } },
+    vertexShader: `
+      attribute float size; varying vec3 vC;
+      void main() {
+        vC = color;
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = size * (80.0 / -mv.z);
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: `
+      varying vec3 vC; uniform sampler2D uTex; uniform float uMode;
+      void main() {
+        float a = texture2D(uTex, gl_PointCoord).a;
+        if(a < 0.01) discard;
+        vec3 c = vC;
+        if(uMode > 0.5 && uMode < 1.5) {
+          float lum = dot(c, vec3(0.3,0.5,0.2));
+          c = vec3(0.5,0.7,1.0) * lum * 2.5;
+        } else if(uMode > 1.5) {
+          float lum = dot(c, vec3(0.3,0.5,0.2));
+          c = vec3(1.0,0.6,0.1) * lum * 2.0;
+        }
+        gl_FragColor = vec4(c, a);
+      }`,
+    transparent: true, vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  sparks.posAttr = geo.attributes.position;
+  sparks.colAttr = geo.attributes.color;
+  sparks.sizAttr = geo.attributes.size;
+  const points = new THREE.Points(geo, sparks.mat);
+  points.rotation.x = 0.08; points.rotation.z = 0.05; // match disk tilt
+  scene.add(points);
+})();
+
+function spawnSparks(x, y, z, count, intensity) {
+  let spawned = 0;
+  for (let i = 0; i < SPARK_N && spawned < count; i++) {
+    const p = sparks.particles[i];
+    if (p.alive) continue;
+    p.alive = true;
+    p.x = x + (Math.random() - 0.5) * 0.1;
+    p.y = y + (Math.random() - 0.5) * 0.1;
+    p.z = z + (Math.random() - 0.5) * 0.1;
+    // Radial burst velocity
+    const angle = Math.random() * Math.PI * 2;
+    const spd = 0.01 + Math.random() * 0.03 * intensity;
+    p.vx = Math.cos(angle) * spd;
+    p.vy = (Math.random() - 0.3) * spd * 0.8;
+    p.vz = Math.sin(angle) * spd;
+    p.life = 0;
+    p.maxLife = 30 + Math.random() * 50;
+    spawned++;
+  }
+}
+
+function updateCollisions() {
+  // 1. Update active shockwaves
+  for (let i = 0; i < MAX_SHOCKS; i++) {
+    const s = shocks[i];
+    if (!s.active) continue;
+    s.radius += s.speed;
+    s.age++;
+    s.intensity *= 0.985;
+    if (s.radius > s.maxRadius || s.intensity < 0.01) {
+      s.active = false;
+    }
+  }
+
+  // 2. Check infall particles crossing inner disk — spawn impacts
+  const infPA = infall.posAttr;
+  if (infPA) {
+    for (let c = 0; c < INFALL_CLUMPS; c++) {
+      const headIdx = c * TRAIL_LEN;
+      const x = infPA.array[headIdx * 3];
+      const z = infPA.array[headIdx * 3 + 2];
+      const y = infPA.array[headIdx * 3 + 1];
+      const r = Math.sqrt(x * x + z * z);
+      // Impact when infall clump is in the disk plane and at disk radius
+      if (Math.abs(y) < 0.08 && r > rPlus * 1.2 && r < 4.0) {
+        // Only trigger occasionally (not every frame)
+        if (Math.random() < 0.008) {
+          spawnShock(x, z, 0.6 + Math.random() * 0.4, 1.5 + Math.random(), 0.03);
+          spawnSparks(x, y, z, 8 + Math.floor(Math.random() * 8), 1.0);
+        }
+      }
+    }
+  }
+
+  // 3. Check TDE particles crossing disk plane — bigger impacts
+  if (tde.active) {
+    for (let i = 0; i < TDE_N; i += 25) { // sample every 25th for performance
+      const p = tde.particles[i];
+      if (!p.alive) continue;
+      const r = Math.sqrt(p.x * p.x + p.z * p.z);
+      if (Math.abs(p.y) < 0.1 && r > rPlus * 1.2 && r < 7.0) {
+        if (Math.random() < 0.004) {
+          spawnShock(p.x, p.z, 0.8 + Math.random() * 0.5, 2.0 + Math.random() * 1.5, 0.035);
+          spawnSparks(p.x, p.y, p.z, 12 + Math.floor(Math.random() * 10), 1.5);
+        }
+      }
+    }
+  }
+
+  // 4. Random MRI turbulence — spontaneous hot spots in the disk
+  if (Math.random() < 0.003) {
+    const r = 1.5 + Math.random() * 4.0;
+    const angle = Math.random() * Math.PI * 2;
+    spawnShock(Math.cos(angle) * r, Math.sin(angle) * r, 0.3 + Math.random() * 0.3, 1.0 + Math.random(), 0.025);
+    if (Math.random() < 0.4) {
+      const y = (Math.random() - 0.5) * 0.03;
+      spawnSparks(Math.cos(angle) * r, y, Math.sin(angle) * r, 4 + Math.floor(Math.random() * 6), 0.6);
+    }
+  }
+
+  // 5. Update spark particles
+  const spa = sparks.posAttr, sca = sparks.colAttr, ssa = sparks.sizAttr;
+  for (let i = 0; i < SPARK_N; i++) {
+    const p = sparks.particles[i];
+    if (!p.alive) {
+      spa.array[i*3] = spa.array[i*3+1] = spa.array[i*3+2] = 0;
+      sca.array[i*3] = sca.array[i*3+1] = sca.array[i*3+2] = 0;
+      ssa.array[i] = 0;
+      continue;
+    }
+    p.life++;
+    if (p.life > p.maxLife) { p.alive = false; continue; }
+    p.x += p.vx;
+    p.y += p.vy;
+    p.z += p.vz;
+    p.vy *= 0.95; // damp vertical
+    p.vx *= 0.98; p.vz *= 0.98;
+    const fade = 1.0 - (p.life / p.maxLife);
+    const flash = p.life < 5 ? 2.0 : 1.0; // initial flash
+    spa.array[i*3] = p.x;
+    spa.array[i*3+1] = p.y;
+    spa.array[i*3+2] = p.z;
+    // Hot white-yellow color
+    sca.array[i*3]   = 1.0 * fade * flash;
+    sca.array[i*3+1] = 0.9 * fade * flash;
+    sca.array[i*3+2] = 0.5 * fade * flash;
+    ssa.array[i] = (0.15 + Math.random() * 0.1) * fade;
+  }
+  spa.needsUpdate = true;
+  sca.needsUpdate = true;
+  ssa.needsUpdate = true;
+}
+
+// Get total shock brightness at a disk position (used in disk animation loop)
+function getShockBrightness(x, z) {
+  let bright = 0;
+  for (let i = 0; i < MAX_SHOCKS; i++) {
+    const s = shocks[i];
+    if (!s.active) continue;
+    const dx = x - s.x, dz = z - s.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    // Ring brightness — peaks at the wavefront, falls off behind it
+    const ringDist = Math.abs(dist - s.radius);
+    const ringWidth = 0.15 + s.radius * 0.08;
+    const ring = Math.exp(-ringDist * ringDist / (ringWidth * ringWidth));
+    // Also some fill brightness inside the ring
+    const fill = dist < s.radius ? Math.exp(-dist * 0.5) * 0.3 : 0;
+    bright += (ring + fill) * s.intensity;
+  }
+  return Math.min(bright, 2.5);
+}
+
+// ============================================================
+// HAWKING RADIATION — quantum particle pairs at the event horizon
+// Virtual pairs form at the horizon; one escapes, one falls in.
+// Faint flickering particles that drift outward and vanish.
+// ============================================================
+const HAWKING_N = 200;
+const hawking = { posAttr: null, colAttr: null, sizAttr: null, particles: [] };
+
+(function(){
+  const pos = new Float32Array(HAWKING_N * 3);
+  const col = new Float32Array(HAWKING_N * 3);
+  const siz = new Float32Array(HAWKING_N);
+
+  for (let i = 0; i < HAWKING_N; i++) {
+    hawking.particles.push({
+      alive: false, x: 0, y: 0, z: 0,
+      vx: 0, vy: 0, vz: 0,
+      life: 0, maxLife: 0, brightness: 0
+    });
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  geo.setAttribute('size', new THREE.BufferAttribute(siz, 1));
+  const glowTex = genSprite(32, 6.0, 2.0);
+  hawking.mat = new THREE.ShaderMaterial({
+    uniforms: { uTex: { value: glowTex }, uMode: { value: 0 } },
+    vertexShader: `
+      attribute float size; varying vec3 vC;
+      void main() {
+        vC = color;
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = size * (60.0 / -mv.z);
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: `
+      varying vec3 vC; uniform sampler2D uTex; uniform float uMode;
+      void main() {
+        float a = texture2D(uTex, gl_PointCoord).a;
+        if(a < 0.01) discard;
+        vec3 c = vC;
+        if(uMode > 0.5 && uMode < 1.5) {
+          float lum = dot(c, vec3(0.33));
+          c = vec3(0.6, 0.8, 1.0) * lum * 3.0;
+        } else if(uMode > 1.5) {
+          float lum = dot(c, vec3(0.33));
+          c = vec3(lum * 0.5, lum * 0.2, lum * 0.05);
+        }
+        gl_FragColor = vec4(c, a * 0.7);
+      }`,
+    transparent: true, vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false
+  });
+
+  hawking.posAttr = geo.attributes.position;
+  hawking.colAttr = geo.attributes.color;
+  hawking.sizAttr = geo.attributes.size;
+  scene.add(new THREE.Points(geo, hawking.mat));
+})();
+
+function updateHawking(t) {
+  // Spawn new pairs — rate inversely proportional to horizon size (smaller BH = more radiation)
+  const spawnRate = 0.08 * (1.0 / (rPlus + 0.1));
+  if (Math.random() < spawnRate) {
+    // Find dead particle
+    for (let i = 0; i < HAWKING_N; i++) {
+      const p = hawking.particles[i];
+      if (p.alive) continue;
+      // Spawn on horizon surface
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2.0 * Math.random() - 1.0);
+      const hR = rPlus * 1.02; // just outside horizon
+      p.x = hR * Math.sin(phi) * Math.cos(theta);
+      p.y = hR * Math.cos(phi);
+      p.z = hR * Math.sin(phi) * Math.sin(theta);
+      // Drift outward — the escaping particle
+      const spd = 0.003 + Math.random() * 0.008;
+      p.vx = p.x / hR * spd;
+      p.vy = p.y / hR * spd;
+      p.vz = p.z / hR * spd;
+      // Add slight tangential drift
+      p.vx += (Math.random() - 0.5) * 0.003;
+      p.vy += (Math.random() - 0.5) * 0.003;
+      p.vz += (Math.random() - 0.5) * 0.003;
+      p.alive = true;
+      p.life = 0;
+      p.maxLife = 40 + Math.random() * 80;
+      p.brightness = 0.3 + Math.random() * 0.7;
+      break;
+    }
+  }
+
+  const pa = hawking.posAttr, ca = hawking.colAttr, sa = hawking.sizAttr;
+  for (let i = 0; i < HAWKING_N; i++) {
+    const p = hawking.particles[i];
+    if (!p.alive) {
+      pa.array[i*3] = pa.array[i*3+1] = pa.array[i*3+2] = 0;
+      ca.array[i*3] = ca.array[i*3+1] = ca.array[i*3+2] = 0;
+      sa.array[i] = 0;
+      continue;
+    }
+    p.life++;
+    if (p.life > p.maxLife) { p.alive = false; continue; }
+
+    p.x += p.vx;
+    p.y += p.vy;
+    p.z += p.vz;
+    // Slight gravitational pull back
+    const r = Math.sqrt(p.x*p.x + p.y*p.y + p.z*p.z);
+    const pull = 0.0001 / (r * r);
+    p.vx -= p.x / r * pull;
+    p.vy -= p.y / r * pull;
+    p.vz -= p.z / r * pull;
+
+    const lifeFrac = p.life / p.maxLife;
+    // Quick flash in, slow fade out
+    const fade = lifeFrac < 0.1 ? lifeFrac / 0.1 : 1.0 - Math.pow((lifeFrac - 0.1) / 0.9, 2.0);
+    // Quantum flicker — random intensity variation
+    const flicker = 0.5 + 0.5 * Math.sin(t * 30.0 + i * 17.3) * Math.sin(t * 47.0 + i * 7.1);
+    const bright = p.brightness * fade * flicker;
+
+    pa.array[i*3] = p.x;
+    pa.array[i*3+1] = p.y;
+    pa.array[i*3+2] = p.z;
+    // Color: thermal spectrum — Hawking temperature ∝ 1/M
+    // Bluish-white for hotter (smaller) BH, reddish for larger
+    const temp = 1.0 / (rPlus + 0.1);
+    const tNorm = Math.min(1.0, temp * 0.8);
+    ca.array[i*3]   = (0.6 + tNorm * 0.4) * bright;
+    ca.array[i*3+1] = (0.6 + tNorm * 0.3) * bright;
+    ca.array[i*3+2] = (0.8 + tNorm * 0.2) * bright;
+    sa.array[i] = (0.08 + 0.06 * p.brightness) * fade;
+  }
+  pa.needsUpdate = true;
+  ca.needsUpdate = true;
+  sa.needsUpdate = true;
+}
+
+// ============================================================
+// GRAVITATIONAL WAVE RIPPLES — spacetime distortion rings
+// Triggered by TDE impacts and pulses. Expanding rings that
+// subtly distort the starfield and brighten the disk.
+// ============================================================
+const MAX_GWAVES = 8;
+const gwaves = [];
+for (let i = 0; i < MAX_GWAVES; i++) {
+  gwaves.push({ active: false, radius: 0, maxRadius: 0, amplitude: 0, age: 0, speed: 0 });
+}
+
+function spawnGWave(amplitude, maxRadius, speed) {
+  let slot = null;
+  for (let i = 0; i < MAX_GWAVES; i++) {
+    if (!gwaves[i].active) { slot = gwaves[i]; break; }
+  }
+  if (!slot) {
+    let oldest = gwaves[0];
+    for (let i = 1; i < MAX_GWAVES; i++) if (gwaves[i].age > oldest.age) oldest = gwaves[i];
+    slot = oldest;
+  }
+  slot.active = true;
+  slot.radius = 0.1;
+  slot.maxRadius = maxRadius || 20.0;
+  slot.amplitude = amplitude || 1.0;
+  slot.age = 0;
+  slot.speed = speed || 0.15; // fast — gravitational waves travel at c
+
+  // Low rumble sound
+  if (audioCtx && masterGain && amplitude > 0.3) {
+    const now = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(25, now);
+    o.frequency.exponentialRampToValueAtTime(12, now + 1.5);
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(amplitude * 0.08, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
+    o.connect(g); g.connect(masterGain);
+    o.start(now); o.stop(now + 2.0);
+  }
+}
+
+function updateGWaves() {
+  for (let i = 0; i < MAX_GWAVES; i++) {
+    const w = gwaves[i];
+    if (!w.active) continue;
+    w.radius += w.speed;
+    w.age++;
+    w.amplitude *= 0.993;
+    if (w.radius > w.maxRadius || w.amplitude < 0.005) {
+      w.active = false;
+    }
+  }
+}
+
+// Returns displacement amount for gravitational wave distortion at a given 3D radius from BH
+function getGWaveDisplacement(r3d) {
+  let disp = 0;
+  for (let i = 0; i < MAX_GWAVES; i++) {
+    const w = gwaves[i];
+    if (!w.active) continue;
+    const ringDist = Math.abs(r3d - w.radius);
+    const width = 0.4 + w.radius * 0.05;
+    disp += Math.sin(ringDist / width * Math.PI * 2.0) * Math.exp(-ringDist * ringDist / (width * width)) * w.amplitude;
+  }
+  return disp;
 }
 
 // ============================================================
@@ -1356,17 +1837,34 @@ const streakBlurMat=new THREE.ShaderMaterial({
 
 // Final output with bloom
 const compositeMat=new THREE.ShaderMaterial({
-  uniforms:{tScene:{value:null},tBloom:{value:null},tStreak:{value:null},uBloomStr:{value:1.5},uTime:{value:0},uMode:{value:0}},
+  uniforms:{tScene:{value:null},tBloom:{value:null},tStreak:{value:null},uBloomStr:{value:1.5},uTime:{value:0},uMode:{value:0},
+    uGWave0:{value:new THREE.Vector3(0,0,0)},uGWave1:{value:new THREE.Vector3(0,0,0)},uGWave2:{value:new THREE.Vector3(0,0,0)},uGWave3:{value:new THREE.Vector3(0,0,0)}},
   vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position,1.0);}`,
   fragmentShader:`uniform sampler2D tScene,tBloom,tStreak;uniform float uBloomStr,uTime,uMode;varying vec2 vUv;
+    uniform vec3 uGWave0,uGWave1,uGWave2,uGWave3; // x=radius, y=amplitude, z=active
     float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
     void main(){
-      vec3 sc=texture2D(tScene,vUv).rgb,bl=texture2D(tBloom,vUv).rgb;
-      vec3 streak=texture2D(tStreak,vUv).rgb;
+      // Gravitational wave screen-space distortion
+      vec2 center=vec2(0.5);
+      vec2 uv=vUv;
+      vec3 gw[4];
+      gw[0]=uGWave0; gw[1]=uGWave1; gw[2]=uGWave2; gw[3]=uGWave3;
+      for(int i=0;i<4;i++){
+        if(gw[i].z<0.5) continue;
+        float r=gw[i].x; float amp=gw[i].y;
+        float dist=length(uv-center)*2.0; // 0 at center, ~1 at edges
+        float ringDist=abs(dist-r*0.06);
+        float width=0.02+r*0.003;
+        float wave=sin(ringDist/width*6.28)*exp(-ringDist*ringDist/(width*width))*amp;
+        vec2 dir=normalize(uv-center+0.001);
+        uv+=dir*wave*0.008;
+      }
+      vec3 sc=texture2D(tScene,uv).rgb,bl=texture2D(tBloom,uv).rgb;
+      vec3 streak=texture2D(tStreak,uv).rgb;
       vec3 col=sc+bl*uBloomStr+streak*0.6;
       float d=length(vUv-0.5),ca=d*d*0.004;
-      col.r+=texture2D(tBloom,vUv+vec2(ca)).r*uBloomStr*0.18;
-      col.b+=texture2D(tBloom,vUv-vec2(ca)).b*uBloomStr*0.18;
+      col.r+=texture2D(tBloom,uv+vec2(ca)).r*uBloomStr*0.18;
+      col.b+=texture2D(tBloom,uv-vec2(ca)).b*uBloomStr*0.18;
       // Mode-dependent overall tint
       if(uMode>0.5&&uMode<1.5){
         // X-RAY: cool blue tint, higher contrast
@@ -1414,7 +1912,7 @@ document.addEventListener('wheel',e=>{
   tgt.radius=Math.max(2.5,Math.min(25,tgt.radius+e.deltaY*0.008));
 },{passive:true});
 document.addEventListener('keydown',e=>{
-  if(e.code==='Space'){e.preventDefault();pulse=1.0;triggerPulseSound();}
+  if(e.code==='Space'){e.preventDefault();pulse=1.0;triggerPulseSound();spawnGWave(0.8, 25, 0.18);}
   if(e.key==='1') setWaveMode(0);
   if(e.key==='2') setWaveMode(1);
   if(e.key==='3') setWaveMode(2);
@@ -1450,7 +1948,7 @@ function setWaveMode(m){
   document.querySelectorAll('#wavemode button').forEach((btn,i)=>{
     btn.classList.toggle('active',i===m);
   });
-  [disk.mat,jetUp.mat,jetDown.mat,infall.mat,tde.mat].forEach(mat=>{
+  [disk.mat,jetUp.mat,jetDown.mat,infall.mat,tde.mat,sparks.mat,hawking.mat].forEach(mat=>{
     if(mat.uniforms.uMode) mat.uniforms.uMode.value=m;
   });
   compositeMat.uniforms.uMode.value=m;
@@ -1731,6 +2229,10 @@ function animate(){
     const a=disk.angles[i];
     pa.array[i*3]=Math.cos(a)*r;
     pa.array[i*3+2]=Math.sin(a)*r;
+    // Gravitational wave ripple — displaces particles perpendicular to disk
+    const r3d = r; // approximate 3D distance
+    const gwDisp = getGWaveDisplacement(r3d);
+    pa.array[i*3+1] = pa.array[i*3+1] + gwDisp * 0.08;
 
     // Particles inside ISCO: fade out (unstable plunging orbits)
     // Particles inside event horizon: completely hidden
@@ -1746,6 +2248,10 @@ function animate(){
     // Update size based on visibility
     sa.array[i] = bs[i] * visibility;
 
+    // Shockwave brightness boost
+    const sx = pa.array[i*3], sz = pa.array[i*3+2];
+    const shockBoost = getShockBrightness(sx, sz);
+
     // Doppler beaming
     const dop=0.5+0.6*Math.cos(a-camA);
     const df=0.5+dop*0.55;
@@ -1754,9 +2260,12 @@ function animate(){
     const rShift = 1.0 - (1.0 - redshiftFactor) * 0.3;
     const gShift = redshiftFactor * 0.85 + 0.15;
     const bShift = redshiftFactor * redshiftFactor;
-    ca.array[i*3]  =bc[i*3]  *df*rShift*visibility;
-    ca.array[i*3+1]=bc[i*3+1]*df*gShift*visibility;
-    ca.array[i*3+2]=bc[i*3+2]*df*bShift*visibility;
+    const totalBright = (1.0 + shockBoost * 1.5);
+    ca.array[i*3]  =bc[i*3]  *df*rShift*visibility*totalBright;
+    ca.array[i*3+1]=bc[i*3+1]*df*gShift*visibility*totalBright;
+    ca.array[i*3+2]=bc[i*3+2]*df*bShift*visibility*totalBright;
+    // Shock makes particles bigger too
+    if(shockBoost > 0.1) sa.array[i] *= (1.0 + shockBoost * 0.5);
   }
   pa.needsUpdate=true;ca.needsUpdate=true;sa.needsUpdate=true;
 
@@ -1765,6 +2274,15 @@ function animate(){
 
   // Update tidal disruption event
   updateTDE(1.0);
+
+  // Update collisions, shockwaves, sparks
+  updateCollisions();
+
+  // Update Hawking radiation
+  updateHawking(t);
+
+  // Update gravitational wave ripples
+  updateGWaves();
 
   // Update time dilation HUD (Kerr-corrected)
   {
@@ -1918,6 +2436,16 @@ function animate(){
   compositeMat.uniforms.tStreak.value=rtStreakB.texture;
   compositeMat.uniforms.uTime.value=t;
   compositeMat.uniforms.uBloomStr.value=1.4+pulse*1.2;
+  // Pass gravitational wave data to composite shader
+  const gwUniforms = [compositeMat.uniforms.uGWave0, compositeMat.uniforms.uGWave1, compositeMat.uniforms.uGWave2, compositeMat.uniforms.uGWave3];
+  let gwIdx = 0;
+  for (let i = 0; i < MAX_GWAVES && gwIdx < 4; i++) {
+    if (gwaves[i].active) {
+      gwUniforms[gwIdx].value.set(gwaves[i].radius, gwaves[i].amplitude, 1.0);
+      gwIdx++;
+    }
+  }
+  for (; gwIdx < 4; gwIdx++) gwUniforms[gwIdx].value.set(0, 0, 0);
   postQuad.material=compositeMat;
   renderer.setRenderTarget(null);renderer.clear();
   renderer.render(postScene,ortho);
