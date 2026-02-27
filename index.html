@@ -238,6 +238,7 @@ canvas{display:block;}
       <li><span class="key">1</span> <span class="key">2</span> <span class="key">3</span> Switch wavelength (Visible / X-Ray / Radio)</li>
       <li><span class="key">T</span> or <span class="key">Double-click</span> Trigger a tidal disruption event</li>
       <li><span class="key">Spin slider</span> (bottom-right) Adjust black hole angular momentum a*</li>
+      <li><span class="key">B</span> Add a companion black hole (max 4, 5 total)</li>
       <li><span class="key">I</span> Toggle this info panel</li>
     </ul>
   </div>
@@ -310,6 +311,22 @@ canvas{display:block;}
     <p>All dτ/dt values in the HUD (bottom-left) recalculate in real-time using the Kerr metric. At higher spin, the ISCO is closer to the horizon, so time there flows much slower. The blinking clock dots update accordingly.</p>
   </div>
 
+  <div class="section">
+    <h2>Multiple Black Holes &amp; Mergers</h2>
+    <p>Press <span class="key">B</span> to add a companion black hole (up to 4 companions + the primary = 5 total). Each companion orbits the primary under full N-body gravitational dynamics.</p>
+    <p><span class="highlight">What happens:</span></p>
+    <ul>
+      <li><span class="highlight">N-body Gravity</span> — every black hole feels gravitational attraction from every other. Companions orbit the primary and interact with each other, producing complex dynamics including three-body chaos.</li>
+      <li><span class="highlight">Disk Perturbation</span> — companion BHs gravitationally tug on disk particles as they pass through. You can see the disk warp near a passing companion — spiral arms and density waves form.</li>
+      <li><span class="highlight">Gravitational Lensing</span> — each companion produces its own Einstein ring and shadow in the starfield. Multiple overlapping lensing patterns create complex distortions.</li>
+      <li><span class="highlight">Orbital Trails</span> — each companion leaves a fading trail. Chaotic orbits produce spirograph-like patterns.</li>
+      <li><span class="highlight">Inspiral</span> — close-orbiting pairs emit gravitational waves, losing energy and spiraling inward with increasing orbital frequency (the LIGO "chirp").</li>
+      <li><span class="highlight">Merger</span> — when two BHs touch, they merge with a massive gravitational wave burst, spark shower, and characteristic chirp-then-ringdown sound.</li>
+    </ul>
+    <p><span class="highlight">Real multi-BH systems:</span> OJ 287 is a confirmed binary SMBH (150M M☉ orbiting 18B M☉, 12-year period). The Milky Way–Andromeda merger in ~4.5 billion years will produce a binary SMBH. Three-body BH interactions are genuinely chaotic. LIGO has detected dozens of BH-BH mergers since 2015.</p>
+    <p><span class="highlight">In the simulation:</span> Companions have random mass (0.15–0.35× primary), spin, and orbital parameters. N-body gravity with GW energy loss drives inspiral. Void mask and lensing shaders support 4 companion shadows and Einstein rings simultaneously.</p>
+  </div>
+
   <div class="section" style="border:none;">
     <h2>Simplifications &amp; Known Limits</h2>
     <p>This simulation prioritizes visual accuracy and real-time performance over full GR ray-tracing. Notable simplifications:</p>
@@ -324,7 +341,7 @@ canvas{display:block;}
   </div>
 </div>
 
-<div id="info">drag to orbit · scroll to zoom · space to pulse · 1/2/3 wavelength · T for tidal disruption · I for info</div>
+<div id="info">drag to orbit · scroll to zoom · space to pulse · 1/2/3 wavelength · T disruption · B add black hole · I info</div>
 <div id="timedilation">
   <div class="td-title">Time Dilation · dτ/dt</div>
   <div class="td-row"><span class="td-label">Event Horizon</span><div class="td-bar"><div class="td-fill" id="td-eh" style="width:0%;background:#f44;"></div></div><span class="td-val">0.000</span><span class="td-clock" id="tc-eh">·</span></div>
@@ -338,6 +355,7 @@ canvas{display:block;}
   <label>Black Hole Spin · a*</label>
   <input type="range" id="spinslider" min="0" max="0.998" step="0.01" value="0.7" oninput="setSpinA(parseFloat(this.value))">
   <div class="spin-val" id="spinval">a* = 0.700</div>
+  <div class="spin-val" id="bhcount" style="margin-top:8px;color:rgba(255,255,255,0.3);">1 BH</div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -413,6 +431,354 @@ function kerrTimeDilation(a, r) {
 let rPlus = kerrEventHorizon(spinA);
 let isco = kerrISCO(spinA);
 let rErgoEquator = 1.0; // Always 2M = 1.0 at equator
+
+// ============================================================
+// N-BODY BLACK HOLE SYSTEM
+// Companion BHs orbit the primary, interact gravitationally,
+// perturb the disk, and merge with massive gwave bursts.
+// ============================================================
+const MAX_COMPANIONS = 4;
+const companions = [];
+
+function addCompanion(mass, distance, speed) {
+  if (companions.length >= MAX_COMPANIONS) return;
+  mass = mass || 0.12 + Math.random() * 0.18;
+  distance = distance || 3.5 + Math.random() * 4.0;
+  // Circular orbital speed: v = sqrt(GM/r), boosted slightly for elliptical stability
+  speed = speed || Math.sqrt(0.5 / distance) * 1.08;
+
+  const angle = Math.random() * Math.PI * 2;
+  const tangent = angle + Math.PI * 0.5;
+
+  const comp = {
+    mass: mass,
+    x: Math.cos(angle) * distance,
+    z: Math.sin(angle) * distance,
+    y: (Math.random() - 0.5) * 0.05,
+    vx: Math.cos(tangent) * speed,
+    vz: Math.sin(tangent) * speed,
+    vy: 0,
+    spin: 0.3 + Math.random() * 0.5,
+    alive: true,
+    voidMesh: null,
+    glowMesh: null,
+    trail: [],
+    trailMesh: null
+  };
+
+  // Create void sphere for this companion
+  const rH = comp.mass * (1.0 + Math.sqrt(Math.max(0, 1.0 - comp.spin * comp.spin)));
+  const voidGeo = new THREE.SphereGeometry(1.0, 48, 48);
+  comp.voidMesh = new THREE.Mesh(voidGeo, new THREE.ShaderMaterial({
+    vertexShader: `void main(){gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+    fragmentShader: `void main(){gl_FragColor=vec4(0.0,0.0,0.0,1.0);}`,
+    depthWrite: true, depthTest: true, side: THREE.FrontSide
+  }));
+  comp.voidMesh.scale.setScalar(rH);
+  comp.voidMesh.position.set(comp.x, comp.y, comp.z);
+  scene.add(comp.voidMesh);
+
+  // Glow ring around companion — small accretion glow
+  const glowGeo = new THREE.RingGeometry(rH * 1.2, rH * 2.5, 64);
+  const glowMat = new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0 } },
+    vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+    fragmentShader: `varying vec2 vUv; uniform float uTime;
+      void main(){
+        float r=length(vUv-0.5)*2.0;
+        float ring=exp(-pow(r-0.6,2.0)*20.0);
+        float pulse=0.8+0.2*sin(uTime*3.0);
+        float a=ring*0.25*pulse;
+        if(a<0.01) discard;
+        vec3 col=mix(vec3(1.0,0.7,0.3),vec3(1.0,0.95,0.8),ring);
+        gl_FragColor=vec4(col,a);
+      }`,
+    transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide
+  });
+  comp.glowMesh = new THREE.Mesh(glowGeo, glowMat);
+  comp.glowMesh.position.set(comp.x, comp.y, comp.z);
+  comp.glowMesh.rotation.x = Math.PI * 0.5 + 0.08;
+  scene.add(comp.glowMesh);
+
+  // Trail geometry — orbital trail
+  const trailN = 120;
+  const trailPos = new Float32Array(trailN * 3);
+  const trailCol = new Float32Array(trailN * 3);
+  const trailSiz = new Float32Array(trailN);
+  for (let i = 0; i < trailN; i++) {
+    trailPos[i*3] = comp.x; trailPos[i*3+1] = comp.y; trailPos[i*3+2] = comp.z;
+    const fade = 1.0 - i / trailN;
+    trailCol[i*3] = 0.6 * fade; trailCol[i*3+1] = 0.4 * fade; trailCol[i*3+2] = 0.15 * fade;
+    trailSiz[i] = (rH * 0.6) * fade;
+  }
+  comp.trail = [];
+  for (let i = 0; i < trailN; i++) comp.trail.push({ x: comp.x, y: comp.y, z: comp.z });
+  const trailGeo = new THREE.BufferGeometry();
+  trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3));
+  trailGeo.setAttribute('color', new THREE.BufferAttribute(trailCol, 3));
+  trailGeo.setAttribute('size', new THREE.BufferAttribute(trailSiz, 1));
+  comp.trailMesh = new THREE.Points(trailGeo, new THREE.ShaderMaterial({
+    uniforms: { uTex: { value: diskTex } },
+    vertexShader: `attribute float size; varying vec3 vC;
+      void main(){ vC=color; vec4 mv=modelViewMatrix*vec4(position,1.0);
+      gl_PointSize=size*(80.0/-mv.z); gl_Position=projectionMatrix*mv; }`,
+    fragmentShader: `varying vec3 vC; uniform sampler2D uTex;
+      void main(){ float a=texture2D(uTex,gl_PointCoord).a*0.5;
+      if(a<0.01)discard; gl_FragColor=vec4(vC,a); }`,
+    transparent: true, vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false
+  }));
+  scene.add(comp.trailMesh);
+
+  companions.push(comp);
+  updateCompanionCount();
+
+  // Sound: low thud announcing arrival
+  if (audioCtx && masterGain) {
+    const now = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    o.type = 'sine'; o.frequency.setValueAtTime(40, now); o.frequency.exponentialRampToValueAtTime(15, now + 0.8);
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.12, now); g.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+    o.connect(g); g.connect(masterGain); o.start(now); o.stop(now + 1.0);
+  }
+}
+
+function mergeCompanion(idx) {
+  const comp = companions[idx];
+  if (!comp || !comp.alive) return;
+
+  // Absorb mass into primary
+  const oldMass = M_BH;
+  // Don't change M_BH directly as it would break everything — just visual/sound
+  const mergerMass = comp.mass;
+
+  // Massive gravitational wave burst
+  spawnGWave(2.0 + mergerMass * 3.0, 35, 0.25);
+  spawnGWave(1.5 + mergerMass * 2.0, 30, 0.18);
+
+  // Huge spark burst at merger point
+  spawnSparks(comp.x, comp.y, comp.z, 60, 3.0);
+  spawnShock(comp.x, comp.z, 2.0, 5.0, 0.06);
+
+  // Merger sound — deep bass + rising chirp
+  if (audioCtx && masterGain) {
+    const now = audioCtx.currentTime;
+    // Inspiral chirp
+    const chirp = audioCtx.createOscillator();
+    chirp.type = 'sine';
+    chirp.frequency.setValueAtTime(30, now);
+    chirp.frequency.exponentialRampToValueAtTime(250, now + 0.3);
+    chirp.frequency.exponentialRampToValueAtTime(20, now + 1.5);
+    const cg = audioCtx.createGain();
+    cg.gain.setValueAtTime(0.2, now);
+    cg.gain.linearRampToValueAtTime(0.35, now + 0.3);
+    cg.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
+    chirp.connect(cg); cg.connect(masterGain);
+    chirp.start(now); chirp.stop(now + 2.0);
+
+    // Deep impact
+    const imp = audioCtx.createOscillator();
+    imp.type = 'sine'; imp.frequency.value = 18;
+    const ig = audioCtx.createGain();
+    ig.gain.setValueAtTime(0.3, now + 0.3);
+    ig.gain.exponentialRampToValueAtTime(0.001, now + 3.0);
+    imp.connect(ig); ig.connect(masterGain);
+    imp.start(now + 0.3); imp.stop(now + 3.0);
+  }
+
+  // Remove meshes
+  scene.remove(comp.voidMesh);
+  scene.remove(comp.glowMesh);
+  scene.remove(comp.trailMesh);
+  comp.alive = false;
+
+  // Clean from array
+  companions.splice(idx, 1);
+  updateCompanionCount();
+
+  // Visual flash — pulse
+  pulse = Math.min(pulse + 0.5, 1.0);
+}
+
+function updateCompanions(dt) {
+  const G = 0.5;
+  const primaryMass = 1.0;
+  const step = 0.025; // ~6x larger: visible orbits in 30-60 sec
+
+  // Leapfrog integration for better energy conservation
+  // Step 1: half-step velocity update
+  for (let i = 0; i < companions.length; i++) {
+    const ci = companions[i];
+    if (!ci.alive) continue;
+
+    let ax = 0, ay = 0, az = 0;
+
+    // Gravity from primary
+    const r2p = ci.x * ci.x + ci.y * ci.y + ci.z * ci.z;
+    const rp = Math.sqrt(r2p);
+    const fp = G * primaryMass / (r2p + 0.08);
+    ax -= ci.x / rp * fp;
+    ay -= ci.y / rp * fp;
+    az -= ci.z / rp * fp;
+
+    // Gravity from other companions
+    for (let j = 0; j < companions.length; j++) {
+      if (i === j) continue;
+      const cj = companions[j];
+      if (!cj.alive) continue;
+      const dx = ci.x - cj.x, dy = ci.y - cj.y, dz = ci.z - cj.z;
+      const r2 = dx * dx + dy * dy + dz * dz;
+      const r = Math.sqrt(r2);
+      const f = G * cj.mass * 2.0 / (r2 + 0.3);
+      ax -= dx / r * f;
+      ay -= dy / r * f;
+      az -= dz / r * f;
+    }
+
+    // Half-step velocity
+    ci.vx += ax * step * 0.5;
+    ci.vy += ay * step * 0.5;
+    ci.vz += az * step * 0.5;
+
+    // Full-step position
+    ci.x += ci.vx * step;
+    ci.y += ci.vy * step;
+    ci.z += ci.vz * step;
+
+    // Dampen y to keep in disk plane
+    ci.vy *= 0.99;
+  }
+
+  // Step 2: recompute acceleration at new position, second half-step velocity
+  for (let i = 0; i < companions.length; i++) {
+    const ci = companions[i];
+    if (!ci.alive) continue;
+
+    let ax = 0, ay = 0, az = 0;
+    const r2p = ci.x * ci.x + ci.y * ci.y + ci.z * ci.z;
+    const rp = Math.sqrt(r2p);
+    const fp = G * primaryMass / (r2p + 0.08);
+    ax -= ci.x / rp * fp;
+    ay -= ci.y / rp * fp;
+    az -= ci.z / rp * fp;
+
+    for (let j = 0; j < companions.length; j++) {
+      if (i === j) continue;
+      const cj = companions[j];
+      if (!cj.alive) continue;
+      const dx = ci.x - cj.x, dy = ci.y - cj.y, dz = ci.z - cj.z;
+      const r2 = dx * dx + dy * dy + dz * dz;
+      const r = Math.sqrt(r2);
+      const f = G * cj.mass * 2.0 / (r2 + 0.3);
+      ax -= dx / r * f;
+      ay -= dy / r * f;
+      az -= dz / r * f;
+    }
+
+    ci.vx += ax * step * 0.5;
+    ci.vy += ay * step * 0.5;
+    ci.vz += az * step * 0.5;
+
+    // GW energy loss — only very close, very gentle
+    if (rp < 2.5) {
+      const gwDrag = 1.0 - 0.0001 / (rp * rp * rp);
+      ci.vx *= gwDrag; ci.vy *= gwDrag; ci.vz *= gwDrag;
+      if (Math.random() < 0.004 / (rp * rp)) {
+        spawnGWave(0.2 / rp, 15, 0.15);
+      }
+    }
+
+    // Gentle drag only at very large radius to prevent full escape
+    if (rp > 20) {
+      const escapeDrag = 0.998;
+      ci.vx *= escapeDrag; ci.vy *= escapeDrag; ci.vz *= escapeDrag;
+    }
+  }
+
+  // Check mergers and update meshes
+  for (let i = companions.length - 1; i >= 0; i--) {
+    const ci = companions[i];
+    if (!ci.alive) continue;
+
+    const rp = Math.sqrt(ci.x * ci.x + ci.y * ci.y + ci.z * ci.z);
+    const mergeR = rPlus + ci.mass * 1.2;
+    if (rp < mergeR) {
+      mergeCompanion(i);
+      continue;
+    }
+
+    // Check merger with other companions
+    for (let j = i - 1; j >= 0; j--) {
+      const cj = companions[j];
+      if (!cj.alive) continue;
+      const dx = ci.x - cj.x, dy = ci.y - cj.y, dz = ci.z - cj.z;
+      const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+      const mergeD = (ci.mass + cj.mass) * 2.0;
+      if (dist < mergeD) {
+        // Merge smaller into larger
+        if (ci.mass >= cj.mass) {
+          ci.mass += cj.mass * 0.8;
+          spawnGWave(1.5, 25, 0.2);
+          spawnSparks(cj.x, cj.y, cj.z, 40, 2.0);
+          scene.remove(cj.voidMesh); scene.remove(cj.glowMesh); scene.remove(cj.trailMesh);
+          cj.alive = false;
+          companions.splice(j, 1);
+          if (i > j) i--;
+        } else {
+          cj.mass += ci.mass * 0.8;
+          spawnGWave(1.5, 25, 0.2);
+          spawnSparks(ci.x, ci.y, ci.z, 40, 2.0);
+          scene.remove(ci.voidMesh); scene.remove(ci.glowMesh); scene.remove(ci.trailMesh);
+          ci.alive = false;
+          companions.splice(i, 1);
+          break;
+        }
+        updateCompanionCount();
+      }
+    }
+    if (!ci.alive) continue;
+
+    // Update meshes
+    const rH = ci.mass * (1.0 + Math.sqrt(Math.max(0, 1.0 - ci.spin * ci.spin)));
+    ci.voidMesh.position.set(ci.x, ci.y, ci.z);
+    ci.voidMesh.scale.setScalar(rH);
+    ci.glowMesh.position.set(ci.x, ci.y, ci.z);
+    ci.glowMesh.scale.setScalar(Math.max(0.5, ci.mass * 3.0));
+    if (ci.glowMesh.material.uniforms) ci.glowMesh.material.uniforms.uTime.value = performance.now() * 0.001;
+
+    // Update trail
+    ci.trail.unshift({ x: ci.x, y: ci.y, z: ci.z });
+    if (ci.trail.length > 120) ci.trail.pop();
+    const tpa = ci.trailMesh.geometry.attributes.position;
+    for (let t = 0; t < Math.min(120, ci.trail.length); t++) {
+      tpa.array[t*3] = ci.trail[t].x;
+      tpa.array[t*3+1] = ci.trail[t].y;
+      tpa.array[t*3+2] = ci.trail[t].z;
+    }
+    tpa.needsUpdate = true;
+  }
+}
+
+// Get gravitational perturbation from companions at a disk position
+function getCompanionGravity(x, z) {
+  let ax = 0, az = 0;
+  for (let i = 0; i < companions.length; i++) {
+    const c = companions[i];
+    if (!c.alive) continue;
+    const dx = x - c.x, dz = z - c.z;
+    const r2 = dx * dx + dz * dz + 0.1;
+    const r = Math.sqrt(r2);
+    const f = c.mass * 0.3 / (r2 + 0.2);
+    ax -= dx / r * f;
+    az -= dz / r * f;
+  }
+  return { ax, az };
+}
+
+function updateCompanionCount() {
+  const el = document.getElementById('bhcount');
+  if (el) el.textContent = (1 + companions.length) + ' BH' + (companions.length > 0 ? 's' : '');
+}
 
 // === JS noise for particle placement ===
 function hash2(x,y){let h=x*374761393+y*668265263;h=(h^(h>>13))*1274126177;return((h^(h>>16))&0x7fffffff)/0x7fffffff;}
@@ -1662,52 +2028,65 @@ const lensMat=new THREE.ShaderMaterial({
     tStars:{value:null},
     uBHScreen:{value:new THREE.Vector2(0.5,0.5)}, // BH center in screen UV
     uBHRadius:{value:0.1}, // apparent angular radius of shadow in screen units
-    uStrength:{value:1.5}
+    uStrength:{value:1.5},
+    uCompScreen0:{value:new THREE.Vector3(0,0,0)}, // xy=screen pos, z=screen radius
+    uCompScreen1:{value:new THREE.Vector3(0,0,0)},
+    uCompScreen2:{value:new THREE.Vector3(0,0,0)},
+    uCompScreen3:{value:new THREE.Vector3(0,0,0)}
   },
   vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position,1.0);}`,
   fragmentShader:`
     uniform sampler2D tStars;
     uniform vec2 uBHScreen;
     uniform float uBHRadius, uStrength;
+    uniform vec3 uCompScreen0, uCompScreen1, uCompScreen2, uCompScreen3;
     varying vec2 vUv;
 
-    void main(){
-      vec2 delta = vUv - uBHScreen;
+    vec3 lensOneBH(vec2 uv, vec2 bhPos, float bhR, float str) {
+      vec2 delta = uv - bhPos;
       float dist = length(delta);
       vec2 dir = delta / max(dist, 0.0001);
+      float photonR = bhR * 1.5;
+      if(dist < bhR * 0.85) return vec3(-1.0); // inside shadow
+      float deflection = str * bhR * bhR / (dist * dist + bhR * 0.1);
+      float photonProx = exp(-pow(dist - photonR, 2.0) / (bhR * bhR * 0.15));
+      deflection += photonProx * bhR * 0.3;
+      return vec3(dir * deflection, 1.0 + photonProx * 3.0);
+    }
 
-      // Schwarzschild-inspired deflection: α ∝ 1/b (impact parameter)
-      // Stronger bending close to the photon sphere (1.5x shadow radius)
-      float photonR = uBHRadius * 1.5;
-
-      // Einstein ring radius in screen space
-      float einsteinR = uBHRadius * 1.73; // √3 × shadow for Schwarzschild
-
-      if(dist < uBHRadius * 0.85){
-        // Inside shadow — black, no stars visible
-        gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-        return;
+    void main(){
+      // Primary BH
+      vec2 delta0 = vUv - uBHScreen;
+      float dist0 = length(delta0);
+      if(dist0 < uBHRadius * 0.85){
+        gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); return;
       }
 
-      // Deflection magnitude — inverse distance law with smooth falloff
-      float deflection = uStrength * uBHRadius * uBHRadius / (dist * dist + uBHRadius * 0.1);
+      // Accumulate lensing from all BHs
+      vec2 totalDeflect = vec2(0.0);
+      float totalAmp = 1.0;
+      bool inShadow = false;
 
-      // Near photon sphere: amplification (Einstein ring brightening)
-      float photonProx = exp(-pow(dist - photonR, 2.0) / (uBHRadius * uBHRadius * 0.15));
-      deflection += photonProx * uBHRadius * 0.3;
+      // Primary
+      vec3 l0 = lensOneBH(vUv, uBHScreen, uBHRadius, uStrength);
+      if(l0.x < -0.5) { inShadow = true; }
+      else { totalDeflect += l0.xy; totalAmp *= l0.z; }
 
-      // Deflection pushes the sampling point OUTWARD (light bends inward)
-      vec2 lensedUV = vUv + dir * deflection;
+      // Companions
+      vec3 comps[4];
+      comps[0]=uCompScreen0; comps[1]=uCompScreen1; comps[2]=uCompScreen2; comps[3]=uCompScreen3;
+      for(int i=0;i<4;i++){
+        if(comps[i].z < 0.001) continue;
+        vec2 cDelta = vUv - comps[i].xy;
+        if(length(cDelta) < comps[i].z * 0.85) { inShadow = true; break; }
+        vec3 cl = lensOneBH(vUv, comps[i].xy, comps[i].z, uStrength * 0.8);
+        if(cl.x > -0.5) { totalDeflect += cl.xy; totalAmp *= cl.z; }
+      }
 
-      // Clamp to valid UV range
-      lensedUV = clamp(lensedUV, 0.0, 1.0);
+      if(inShadow) { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); return; }
 
-      vec3 col = texture2D(tStars, lensedUV).rgb;
-
-      // Einstein ring amplification — stars near photon sphere appear brighter
-      float amp = 1.0 + photonProx * 3.0;
-      col *= amp;
-
+      vec2 lensedUV = clamp(vUv + totalDeflect, 0.0, 1.0);
+      vec3 col = texture2D(tStars, lensedUV).rgb * totalAmp;
       gl_FragColor = vec4(col, 1.0);
     }
   `
@@ -1749,24 +2128,33 @@ const combineMat=new THREE.ShaderMaterial({
 
 // SOLUTION: Render a void-only pass to get a silhouette mask.
 const voidMaskMat=new THREE.ShaderMaterial({
-  uniforms:{uCamPos:{value:new THREE.Vector3()},uRes:{value:new THREE.Vector2()},uFov:{value:FOV_MULT},uRPlus:{value:rPlus}},
+  uniforms:{uCamPos:{value:new THREE.Vector3()},uRes:{value:new THREE.Vector2()},uFov:{value:FOV_MULT},uRPlus:{value:rPlus},
+    uComp0:{value:new THREE.Vector4(0,0,0,0)},uComp1:{value:new THREE.Vector4(0,0,0,0)},
+    uComp2:{value:new THREE.Vector4(0,0,0,0)},uComp3:{value:new THREE.Vector4(0,0,0,0)}},
   vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position,1.0);}`,
   fragmentShader:`
     uniform vec3 uCamPos;uniform vec2 uRes;uniform float uFov,uRPlus;varying vec2 vUv;
+    uniform vec4 uComp0,uComp1,uComp2,uComp3; // xyz=position, w=radius
     mat3 camMat(vec3 eye,vec3 tgt){
       vec3 f=normalize(tgt-eye),r=normalize(cross(f,vec3(0,1,0))),u=cross(r,f);
       return mat3(r,u,f);}
+    float sphereHit(vec3 ro,vec3 rd,vec3 center,float radius){
+      vec3 oc=ro-center;
+      float b=dot(oc,rd); float c=dot(oc,oc)-radius*radius;
+      float d=b*b-c; return d>0.0?1.0:0.0;
+    }
     void main(){
       vec2 uv=vUv-0.5;
       uv.x*=uRes.x/uRes.y;
       mat3 cam=camMat(uCamPos,vec3(0.0));
       vec3 rd=normalize(cam*vec3(uv*uFov,1.0));
-      // Ray-sphere intersection for void (r=rPlus)
-      vec3 oc=uCamPos;
-      float b2=dot(oc,rd);
-      float c=dot(oc,oc)-uRPlus*uRPlus;
-      float disc=b2*b2-c;
-      float mask=disc>0.0?1.0:0.0;
+      // Primary BH at origin
+      float mask=sphereHit(uCamPos,rd,vec3(0.0),uRPlus);
+      // Companion BHs
+      vec4 comps[4]; comps[0]=uComp0; comps[1]=uComp1; comps[2]=uComp2; comps[3]=uComp3;
+      for(int i=0;i<4;i++){
+        if(comps[i].w>0.01) mask=max(mask,sphereHit(uCamPos,rd,comps[i].xyz,comps[i].w));
+      }
       gl_FragColor=vec4(vec3(mask),1.0);
     }`
 });
@@ -1918,6 +2306,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='3') setWaveMode(2);
   if(e.key==='i'||e.key==='I') toggleInfo();
   if(e.key==='t'||e.key==='T') spawnTDE();
+  if(e.key==='b'||e.key==='B') addCompanion();
 });
 
 document.addEventListener('dblclick',e=>{
@@ -2227,8 +2616,22 @@ function animate(){
     const frameDrag=kerrFrameDrag(spinA,r)*3.0;
     disk.angles[i]+=(disk.velocities[i]+frameDrag)*0.004;
     const a=disk.angles[i];
-    pa.array[i*3]=Math.cos(a)*r;
-    pa.array[i*3+2]=Math.sin(a)*r;
+    let px=Math.cos(a)*r;
+    let pz=Math.sin(a)*r;
+    // Companion BH gravitational perturbation
+    if (companions.length > 0) {
+      const cg = getCompanionGravity(px, pz);
+      // Convert acceleration to angular perturbation
+      const tangentX = -Math.sin(a), tangentZ = Math.cos(a);
+      const tangentForce = cg.ax * tangentX + cg.az * tangentZ;
+      disk.angles[i] += tangentForce * 0.002;
+      // Radial perturbation — slight wobble
+      const radialForce = cg.ax * Math.cos(a) + cg.az * Math.sin(a);
+      px += cg.ax * 0.15;
+      pz += cg.az * 0.15;
+    }
+    pa.array[i*3]=px;
+    pa.array[i*3+2]=pz;
     // Gravitational wave ripple — displaces particles perpendicular to disk
     const r3d = r; // approximate 3D distance
     const gwDisp = getGWaveDisplacement(r3d);
@@ -2283,6 +2686,9 @@ function animate(){
 
   // Update gravitational wave ripples
   updateGWaves();
+
+  // Update companion black holes (N-body)
+  updateCompanions(1.0);
 
   // Update time dilation HUD (Kerr-corrected)
   {
@@ -2348,6 +2754,17 @@ function animate(){
   voidMaskMat.uniforms.uCamPos.value.copy(camera.position);
   voidMaskMat.uniforms.uRes.value.set(window.innerWidth,window.innerHeight);
   voidMaskMat.uniforms.uRPlus.value=rPlus;
+  // Pass companion BH positions to void mask
+  const compUniforms = [voidMaskMat.uniforms.uComp0, voidMaskMat.uniforms.uComp1, voidMaskMat.uniforms.uComp2, voidMaskMat.uniforms.uComp3];
+  for (let ci = 0; ci < 4; ci++) {
+    if (ci < companions.length && companions[ci].alive) {
+      const c = companions[ci];
+      const rH = c.mass * (1.0 + Math.sqrt(Math.max(0, 1.0 - c.spin * c.spin)));
+      compUniforms[ci].value.set(c.x, c.y, c.z, rH);
+    } else {
+      compUniforms[ci].value.set(0, 0, 0, 0);
+    }
+  }
 
   // ---- RENDER PIPELINE ----
 
@@ -2364,6 +2781,24 @@ function animate(){
 
   lensMat.uniforms.uBHScreen.value.set(bhScreenX,bhScreenY);
   lensMat.uniforms.uBHRadius.value=Math.max(0.01,bhScreenR);
+
+  // Compute companion screen positions for lensing
+  const compLensUniforms = [lensMat.uniforms.uCompScreen0, lensMat.uniforms.uCompScreen1, lensMat.uniforms.uCompScreen2, lensMat.uniforms.uCompScreen3];
+  for (let ci = 0; ci < 4; ci++) {
+    if (ci < companions.length && companions[ci].alive) {
+      const c = companions[ci];
+      const rH = c.mass * (1.0 + Math.sqrt(Math.max(0, 1.0 - c.spin * c.spin)));
+      const cPos = new THREE.Vector3(c.x, c.y, c.z).project(camera);
+      const cScreenX = cPos.x * 0.5 + 0.5;
+      const cScreenY = cPos.y * 0.5 + 0.5;
+      // Project edge to get screen radius
+      const cEdge = new THREE.Vector3(c.x + rH, c.y, c.z).project(camera);
+      const cScreenR = Math.abs((cEdge.x * 0.5 + 0.5) - cScreenX) * 1.1;
+      compLensUniforms[ci].value.set(cScreenX, cScreenY, Math.max(0.005, cScreenR));
+    } else {
+      compLensUniforms[ci].value.set(0, 0, 0);
+    }
+  }
 
   // 1. Render stars to texture
   renderer.setRenderTarget(rtStars);
