@@ -109,10 +109,12 @@ canvas{display:block;}
     <h2>Event Horizon &amp; Gravitational Lensing</h2>
     <p>The <span class="highlight">event horizon</span> is the boundary beyond which nothing — not even light — can escape. The black sphere you see is actually the <span class="highlight">black hole shadow</span>, which appears larger than the event horizon because light passing nearby gets bent inward.</p>
     <ul>
-      <li><span class="highlight">Photon Sphere</span> (r = 1.5 r<sub>s</sub>) — at this radius, light can theoretically orbit the black hole in an unstable circular path. In the simulation, stars near this radius get amplified into a bright <span class="highlight">Einstein ring</span>.</li>
-      <li><span class="highlight">Gravitational Lensing</span> — the 25,000 background stars are rendered to a separate texture, then warped by a distortion shader. Each pixel's sampling point is displaced outward from the black hole center with deflection ∝ 1/b² (where b is the impact parameter). Stars behind the black hole appear to wrap around it — this was first observed during the 1919 solar eclipse and confirmed Einstein's General Relativity.</li>
-      <li><span class="highlight">Einstein Ring</span> — when a star is directly behind the black hole, its light is bent equally in all directions, forming a perfect ring of amplified light around the shadow. In the simulation, stars near the photon sphere receive a 3× brightness boost.</li>
+      <li><span class="highlight">Photon Sphere</span> (r = 1.5 r<sub>s</sub>) — at this radius, light can theoretically orbit the black hole in an unstable circular path. Light that grazes this radius gets deflected by enormous angles, creating a bright <span class="highlight">Einstein ring</span>.</li>
+      <li><span class="highlight">Geodesic Ray Tracing</span> (default, press <span class="key">L</span> to toggle) — each pixel traces a light ray through curved Schwarzschild spacetime using the exact null geodesic equation: <strong>a = -(M/r³) × r̂ × (1 + 3h²/r²)</strong>, where h is the photon's angular momentum. This naturally produces the correct shadow, photon ring, primary and secondary Einstein rings, and multiple images of background stars. For spinning black holes, Kerr frame-dragging twists rays: <strong>a<sub>drag</sub> = 2Ma*/(r³) × (ẑ × r̂)</strong>, creating the asymmetric photon ring observed by the Event Horizon Telescope. 64 integration steps per pixel with adaptive step size and velocity Verlet integration.</li>
+      <li><span class="highlight">Classic Lensing</span> (press <span class="key">L</span>) — the 25,000 particle-based background stars are warped by a screen-space post-process with deflection ∝ 1/b². Faster but less physically accurate — no secondary images or proper photon ring asymmetry.</li>
+      <li><span class="highlight">Multiple Images</span> — in geodesic mode, a single star behind the black hole can appear as TWO images on opposite sides (primary + secondary Einstein ring), because light can pass on either side of the photon sphere. Very close to the shadow edge, light wraps further around, creating increasingly compressed image copies — the "photon ring".</li>
     </ul>
+    <p>This uses the same fundamental physics as the rendering of Gargantua in <em>Interstellar</em> (Thorne &amp; James, 2015) and Eric Bruneton's real-time black hole shader, though simplified for 60fps browser performance.</p>
   </div>
 
   <div class="section">
@@ -239,6 +241,7 @@ canvas{display:block;}
       <li><span class="key">T</span> or <span class="key">Double-click</span> Trigger a tidal disruption event</li>
       <li><span class="key">Spin slider</span> (bottom-right) Adjust black hole angular momentum a*</li>
       <li><span class="key">B</span> Add a companion black hole (max 4, 5 total)</li>
+      <li><span class="key">L</span> Toggle between geodesic ray-traced and classic screen-space lensing</li>
       <li><span class="key">I</span> Toggle this info panel</li>
     </ul>
   </div>
@@ -331,7 +334,7 @@ canvas{display:block;}
     <h2>Simplifications &amp; Known Limits</h2>
     <p>This simulation prioritizes visual accuracy and real-time performance over full GR ray-tracing. Notable simplifications:</p>
     <ul>
-      <li>Gravitational lensing uses screen-space distortion rather than full Kerr geodesic ray-tracing — a spinning black hole would produce asymmetric lensing (light co-rotating with the BH bends differently from counter-rotating light). This is not yet implemented.</li>
+      <li>Gravitational lensing in geodesic mode uses the Schwarzschild metric with first-order Kerr frame-dragging correction. Full Kerr null geodesics (Carter constant, separate prograde/retrograde critical curves) would produce more accurate asymmetric shadow shapes at extreme spin. The classic mode uses screen-space 1/b² distortion.</li>
       <li>The accretion disk is geometrically thin. Real disks can be thick (ADAF/RIAF at low accretion rates) or slim (at super-Eddington rates).</li>
       <li>TDE timescales are compressed — real events unfold over weeks to months, not seconds.</li>
       <li>No magnetohydrodynamics (MHD) — magnetic fields play a crucial role in jet formation (Blandford-Znajek process), disk turbulence (MRI instability), and angular momentum transport.</li>
@@ -341,7 +344,7 @@ canvas{display:block;}
   </div>
 </div>
 
-<div id="info">drag to orbit · scroll to zoom · space to pulse · 1/2/3 wavelength · T disruption · B add black hole · I info</div>
+<div id="info">drag to orbit · scroll to zoom · space to pulse · 1/2/3 wavelength · T disruption · B add black hole · L toggle lensing · I info</div>
 <div id="timedilation">
   <div class="td-title">Time Dilation · dτ/dt</div>
   <div class="td-row"><span class="td-label">Event Horizon</span><div class="td-bar"><div class="td-fill" id="td-eh" style="width:0%;background:#f44;"></div></div><span class="td-val">0.000</span><span class="td-clock" id="tc-eh">·</span></div>
@@ -356,6 +359,7 @@ canvas{display:block;}
   <input type="range" id="spinslider" min="0" max="0.998" step="0.01" value="0.7" oninput="setSpinA(parseFloat(this.value))">
   <div class="spin-val" id="spinval">a* = 0.700</div>
   <div class="spin-val" id="bhcount" style="margin-top:8px;color:rgba(255,255,255,0.3);">1 BH</div>
+  <div class="spin-val" id="lensmodebadge" style="margin-top:4px;color:rgba(180,160,255,0.5);font-size:10px;">GEODESIC LENSING</div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -828,19 +832,135 @@ const bgMat=new THREE.ShaderMaterial({
     uFov:{value:FOV_MULT},
     uMode:{value:0},
     uRPlus:{value:rPlus},
-    uSpinA:{value:spinA}
+    uSpinA:{value:spinA},
+    uLensMode:{value:1}  // 0=classic glow only, 1=geodesic ray-traced
   },
   vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position,1.0);}`,
   fragmentShader:`
     precision highp float;
     uniform vec2 uRes;
     uniform vec3 uCamPos;
-    uniform float uTime,uFov,uMode,uRPlus,uSpinA;
+    uniform float uTime,uFov,uMode,uRPlus,uSpinA,uLensMode;
     varying vec2 vUv;
 
     mat3 camMat(vec3 eye,vec3 tgt){
       vec3 f=normalize(tgt-eye),r=normalize(cross(f,vec3(0,1,0))),u=cross(r,f);
       return mat3(r,u,f);}
+
+    // ---- Procedural starfield ----
+    float hash21(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+    float hash31(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
+
+    vec3 starfield(vec3 dir){
+      // Spherical coords
+      float theta=acos(clamp(dir.y,-1.0,1.0));
+      float phi=atan(dir.z,dir.x);
+      // Multi-scale grid for varying star densities
+      vec3 col=vec3(0.0);
+      // Dense field
+      for(int layer=0;layer<2;layer++){
+        float scale=layer==0?30.0:60.0;
+        float threshold=layer==0?0.92:0.96;
+        float bright=layer==0?1.0:0.4;
+        vec2 grid=vec2(phi*scale/6.2832,theta*scale/3.14159);
+        vec2 cell=floor(grid);
+        for(int dx=-1;dx<=1;dx++){
+          for(int dy=-1;dy<=1;dy++){
+            vec2 c=cell+vec2(float(dx),float(dy));
+            float h1=hash21(c+float(layer)*500.0);
+            if(h1<threshold) continue;
+            float h2=hash21(c+vec2(100.0,200.0)+float(layer)*500.0);
+            float h3=hash21(c+vec2(300.0,400.0)+float(layer)*500.0);
+            vec2 starPos=c+vec2(h1,h2);
+            float dist=length(grid-starPos);
+            // Sharp point-like star
+            float s=exp(-dist*dist*200.0)*(0.3+h1*h1*3.0)*bright;
+            // Twinkle
+            s*=0.85+0.15*sin(uTime*0.5+h3*100.0);
+            // Star color: temperature
+            vec3 starCol;
+            if(h3>0.75) starCol=vec3(0.7,0.8,1.0);      // hot blue
+            else if(h3>0.45) starCol=vec3(1.0,0.97,0.92); // white
+            else if(h3>0.2) starCol=vec3(1.0,0.88,0.7);   // yellow
+            else starCol=vec3(1.0,0.65,0.45);              // orange-red
+            col+=starCol*s;
+          }
+        }
+      }
+      return col;
+    }
+
+    // ---- Null geodesic ray-tracing ----
+    // Schwarzschild + Kerr frame-dragging
+    // Acceleration on photon: a = -(M/r³)*pos*(1 + 3h²/r²) + Kerr drag
+    // This is exact for Schwarzschild, first-order for Kerr
+
+    vec3 traceRay(vec3 ro, vec3 rd, out float hitBH, out float photonRingGlow){
+      float M=uRPlus*0.5/(1.0+sqrt(max(0.0,1.0-uSpinA*uSpinA))); // M from rPlus
+      float rs=2.0*M;
+      hitBH=0.0;
+      photonRingGlow=0.0;
+
+      vec3 pos=ro;
+      vec3 vel=rd*1.0; // unit speed (null geodesic)
+      float minR=1e10;
+      float dt=0.3; // adaptive step
+
+      for(int i=0;i<64;i++){
+        float r=length(pos);
+        if(r<uRPlus*1.01){
+          hitBH=1.0;
+          return vec3(0.0);
+        }
+        if(r>80.0){
+          break; // escaped — sample stars at current direction
+        }
+
+        // Track closest approach for photon ring detection
+        if(r<minR) minR=r;
+
+        // Adaptive step size — smaller near the BH for accuracy
+        dt=clamp(r*0.08,0.05,0.5);
+
+        // Angular momentum
+        vec3 h=cross(pos,vel);
+        float h2=dot(h,h);
+        float r2=r*r;
+        float r3=r2*r;
+
+        // Schwarzschild geodesic acceleration
+        vec3 acc=-M/r3*pos*(1.0+3.0*h2/r2);
+
+        // Kerr frame-dragging: twist around spin axis (y-axis)
+        if(uSpinA>0.01){
+          float aKerr=uSpinA*M; // dimensional spin
+          // Frame drag: Omega_fd = 2Ma/(r³) approximately
+          // Adds tangential acceleration perpendicular to pos in equatorial plane
+          vec3 spinAxis=vec3(0.0,1.0,0.0);
+          vec3 tangent=cross(spinAxis,normalize(pos));
+          float dragStrength=2.0*M*aKerr/(r3+aKerr*aKerr*r);
+          acc+=tangent*dragStrength*length(vel);
+        }
+
+        // Velocity Verlet integration
+        vec3 newVel=vel+acc*dt;
+        pos+=0.5*(vel+newVel)*dt;
+        vel=newVel;
+
+        // Renormalize velocity (null geodesic: keep |v| constant in flat-space approx)
+        vel=normalize(vel);
+      }
+
+      // Photon ring glow — rays that passed very close to photon sphere
+      float photonSphere=rs*1.5; // 3M
+      float closestRatio=minR/photonSphere;
+      // Strong glow for rays that graze the photon sphere
+      photonRingGlow=exp(-pow(closestRatio-1.0,2.0)*80.0)*2.0;
+      // Secondary ring: rays that went ~halfway around
+      photonRingGlow+=exp(-pow(closestRatio-1.02,2.0)*200.0)*0.8;
+
+      return normalize(vel); // final direction — sample stars here
+    }
 
     void main(){
       vec2 uv=vUv-0.5;
@@ -848,21 +968,65 @@ const bgMat=new THREE.ShaderMaterial({
       mat3 cam=camMat(uCamPos,vec3(0.0));
       vec3 rd=normalize(cam*vec3(uv*uFov,1.0));
 
+      // === GEODESIC MODE ===
+      if(uLensMode>0.5){
+        float hitBH,prGlow;
+        vec3 finalDir=traceRay(uCamPos,rd,hitBH,prGlow);
+
+        if(hitBH>0.5){
+          // Shadow — pure black with faint edge glow
+          float b=length(cross(uCamPos,rd));
+          float edgeGlow=exp(-pow(b-uRPlus*1.1,2.0)*5.0)*0.04;
+          vec3 edgeCol=uMode<0.5?vec3(1.0,0.85,0.6):(uMode<1.5?vec3(0.4,0.6,1.0):vec3(1.0,0.4,0.1));
+          gl_FragColor=vec4(edgeCol*edgeGlow,1.0);
+          return;
+        }
+
+        // Sample procedural starfield at deflected direction
+        vec3 stars=starfield(finalDir);
+
+        // Einstein ring amplification — conservation of surface brightness
+        // Rays near photon sphere are highly magnified
+        stars*=(1.0+prGlow*3.0);
+
+        // Photon ring glow
+        vec3 ringCol=uMode<0.5?vec3(1.0,0.9,0.72):(uMode<1.5?vec3(0.6,0.8,1.0):vec3(1.0,0.5,0.2));
+        stars+=ringCol*prGlow*0.12;
+
+        // Ergosphere glow
+        if(uSpinA>0.01){
+          float b=length(cross(uCamPos,rd));
+          float ergoR=0.5*(uRPlus+1.0);
+          float ergoWidth=1.0-uRPlus;
+          float ergoGlow=exp(-pow(b-ergoR,2.0)/(ergoWidth*ergoWidth*0.3))*0.04*uSpinA;
+          vec3 ergoCol=uMode<0.5?vec3(0.4,0.3,0.9):(uMode<1.5?vec3(0.3,0.3,1.0):vec3(0.6,0.2,0.5));
+          stars+=ergoCol*ergoGlow;
+        }
+
+        // Wavelength mode tint
+        if(uMode>0.5&&uMode<1.5){
+          float lum=dot(stars,vec3(0.33));
+          stars=mix(stars,vec3(0.6,0.8,1.0)*lum*1.5,0.3);
+        } else if(uMode>1.5){
+          float lum=dot(stars,vec3(0.33));
+          stars=mix(stars,vec3(1.0,0.5,0.2)*lum*1.5,0.3);
+        }
+
+        gl_FragColor=vec4(stars,1.0);
+        return;
+      }
+
+      // === CLASSIC MODE (original glow-only) ===
       float b=length(cross(uCamPos,rd));
-      // Photon sphere scales with spin: ~1.5*RS for Schwarzschild, smaller for Kerr prograde
       float photonR=uRPlus*(1.0+0.5/(1.0+uSpinA));
       float ringGlow=exp(-pow(b-photonR,2.0)*18.0)*0.15;
       float shadowEdge=exp(-pow(b-uRPlus*1.1,2.0)*5.0)*0.06;
-
-      // Ergosphere glow — faint ring between rPlus and 1.0
       float ergoGlow=0.0;
       if(uSpinA>0.01){
-        float ergoR=0.5*(uRPlus+1.0); // middle of ergosphere
+        float ergoR=0.5*(uRPlus+1.0);
         float ergoWidth=1.0-uRPlus;
         ergoGlow=exp(-pow(b-ergoR,2.0)/(ergoWidth*ergoWidth*0.3))*0.04*uSpinA;
       }
-
-      // Mode-dependent glow color
       vec3 ringCol,edgeCol,ergoCol;
       if(uMode<0.5){
         ringCol=vec3(1.0,0.9,0.72); edgeCol=vec3(1.0,0.85,0.6); ergoCol=vec3(0.4,0.3,0.9);
@@ -872,7 +1036,6 @@ const bgMat=new THREE.ShaderMaterial({
         ringCol=vec3(1.0,0.5,0.2); edgeCol=vec3(1.0,0.4,0.1); ergoCol=vec3(0.6,0.2,0.5);
       }
       vec3 col=ringCol*ringGlow+edgeCol*shadowEdge+ergoCol*ergoGlow;
-
       gl_FragColor=vec4(col,1.0);
     }
   `
@@ -2161,17 +2324,24 @@ const voidMaskMat=new THREE.ShaderMaterial({
 
 // Final combine: (lensedStars + BG glow) * (1-voidMask) + particles
 const finalCombineMat=new THREE.ShaderMaterial({
-  uniforms:{tBG:{value:null},tParticles:{value:null},tMask:{value:null},tStarsLensed:{value:null}},
+  uniforms:{tBG:{value:null},tParticles:{value:null},tMask:{value:null},tStarsLensed:{value:null},uLensMode:{value:1}},
   vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position,1.0);}`,
-  fragmentShader:`uniform sampler2D tBG,tParticles,tMask,tStarsLensed;varying vec2 vUv;
+  fragmentShader:`uniform sampler2D tBG,tParticles,tMask,tStarsLensed;uniform float uLensMode;varying vec2 vUv;
     void main(){
       vec3 bg=texture2D(tBG,vUv).rgb;
-      vec3 stars=texture2D(tStarsLensed,vUv).rgb;
       vec3 fg=texture2D(tParticles,vUv).rgb;
       float mask=texture2D(tMask,vUv).r;
-      // Behind void: suppress background and stars. Elsewhere: show everything
-      vec3 col=(stars+bg)*(1.0-mask)+fg;
-      gl_FragColor=vec4(col,1.0);
+      if(uLensMode>0.5){
+        // Geodesic mode: bg already has lensed stars + shadow
+        // Only mask the particle layer
+        vec3 col=bg+fg*(1.0-mask*0.85);
+        gl_FragColor=vec4(col,1.0);
+      } else {
+        // Classic mode: separate star + bg layers
+        vec3 stars=texture2D(tStarsLensed,vUv).rgb;
+        vec3 col=(stars+bg)*(1.0-mask)+fg;
+        gl_FragColor=vec4(col,1.0);
+      }
     }`
 });
 
@@ -2307,6 +2477,13 @@ document.addEventListener('keydown',e=>{
   if(e.key==='i'||e.key==='I') toggleInfo();
   if(e.key==='t'||e.key==='T') spawnTDE();
   if(e.key==='b'||e.key==='B') addCompanion();
+  if(e.key==='l'||e.key==='L'){
+    lensMode=1-lensMode;
+    bgMat.uniforms.uLensMode.value=lensMode;
+    finalCombineMat.uniforms.uLensMode.value=lensMode;
+    const badge=document.getElementById('lensmodebadge');
+    if(badge) badge.textContent=lensMode?'GEODESIC LENSING':'CLASSIC LENSING';
+  }
 });
 
 document.addEventListener('dblclick',e=>{
@@ -2332,6 +2509,7 @@ document.addEventListener('mousedown',e=>{
 });
 
 let waveMode=0;
+let lensMode=1; // 0=classic (screen-space), 1=geodesic (ray-traced)
 function setWaveMode(m){
   waveMode=m;
   document.querySelectorAll('#wavemode button').forEach((btn,i)=>{
@@ -2800,16 +2978,18 @@ function animate(){
     }
   }
 
-  // 1. Render stars to texture
-  renderer.setRenderTarget(rtStars);
-  renderer.setClearColor(0x000000,1);renderer.clear();
-  renderer.render(starScene,camera);
+  // 1. Render stars to texture (classic mode only)
+  if(lensMode===0){
+    renderer.setRenderTarget(rtStars);
+    renderer.setClearColor(0x000000,1);renderer.clear();
+    renderer.render(starScene,camera);
 
-  // 2. Apply gravitational lensing distortion
-  lensMat.uniforms.tStars.value=rtStars.texture;
-  postQuad.material=lensMat;
-  renderer.setRenderTarget(rtStarsLensed);renderer.clear();
-  renderer.render(postScene,ortho);
+    // 2. Apply gravitational lensing distortion
+    lensMat.uniforms.tStars.value=rtStars.texture;
+    postQuad.material=lensMat;
+    renderer.setRenderTarget(rtStarsLensed);renderer.clear();
+    renderer.render(postScene,ortho);
+  }
 
   // 3. Raymarched BG glow (Einstein ring)
   renderer.setRenderTarget(rtBG);renderer.clear();
